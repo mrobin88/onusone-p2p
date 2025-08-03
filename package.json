@@ -1,0 +1,53 @@
+{
+  "name": "@onusone/p2p-network",
+  "version": "0.1.0",
+  "description": "Decentralized discussion network with content decay and community curation",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run node:dev\" \"npm run frontend:dev\"",
+    "node:dev": "cd node && npm run dev",
+    "node:start": "cd node && npm start",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "blockchain:dev": "cd blockchain && anchor test",
+    "blockchain:deploy": "cd blockchain && anchor deploy",
+    "install:all": "npm install && cd frontend && npm install && cd ../node && npm install && cd ../blockchain && npm install",
+    "test": "npm run test:node && npm run test:frontend",
+    "test:node": "cd node && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "clean": "rm -rf node_modules frontend/node_modules node/node_modules blockchain/node_modules",
+    "reset": "npm run clean && npm run install:all"
+  },
+  "keywords": [
+    "p2p",
+    "decentralized",
+    "social-network",
+    "web3",
+    "ipfs",
+    "libp2p",
+    "blockchain",
+    "community",
+    "discussion"
+  ],
+  "author": "OnusOne Community",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/onusone/p2p-network.git"
+  },
+  "bugs": {
+    "url": "https://github.com/onusone/p2p-network/issues"
+  },
+  "homepage": "https://onusone.network",
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "eslint": "^8.54.0",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
