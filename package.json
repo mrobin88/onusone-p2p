@@ -17,7 +17,12 @@
     "test:frontend": "cd frontend && npm test",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "clean": "rm -rf node_modules frontend/node_modules node/node_modules blockchain/node_modules",
-    "reset": "npm run clean && npm run install:all"
+    "reset": "npm run clean && npm run install:all",
+    "deploy:bootstrap": "node scripts/deploy-bootstrap.js",
+    "deploy:production": "node scripts/deploy-production.js",
+    "setup:env": "node scripts/setup-environment.js",
+    "test:p2p-network": "node scripts/test-p2p-network.js",
+    "monitor:network": "node scripts/monitor-network.js"
   },
   "keywords": [
     "p2p",
@@ -41,13 +46,17 @@
   },
   "homepage": "https://onusone.network",
   "devDependencies": {
-    "concurrently": "^7.6.0",
-    "eslint": "^8.54.0",
     "@typescript-eslint/eslint-plugin": "^6.12.0",
-    "@typescript-eslint/parser": "^6.12.0"
+    "@typescript-eslint/parser": "^6.12.0",
+    "concurrently": "^7.6.0",
+    "eslint": "^8.54.0"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "@onusone/shared-components": "file:../shared-components",
+    "axios": "^1.11.0"
   }
 }

@@ -1,0 +1,217 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # Build and package
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    outputs:
+      node-artifact: ${{ steps.build-node.outputs.artifact }}
+      frontend-artifact: ${{ steps.build-frontend.outputs.artifact }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install and build shared library
+        working-directory: ./shared
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build node backend
+        id: build-node
+        working-directory: ./node
+        run: |
+          npm ci
+          npm run build --if-present
+          tar -czf node-backend.tar.gz dist/ package.json package-lock.json
+          echo "artifact=$(pwd)/node-backend.tar.gz" >> $GITHUB_OUTPUT
+
+      - name: Build frontend
+        id: build-frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+          tar -czf frontend.tar.gz .next/ package.json package-lock.json public/
+          echo "artifact=$(pwd)/frontend.tar.gz" >> $GITHUB_OUTPUT
+
+      - name: Upload node artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-backend
+          path: ${{ steps.build-node.outputs.artifact }}
+
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend
+          path: ${{ steps.build-frontend.outputs.artifact }}
+
+  # Deploy to staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    environment: staging
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: node-backend
+          path: ./node-artifacts
+
+      - name: Download frontend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend
+          path: ./frontend-artifacts
+
+      - name: Deploy to staging server
+        run: |
+          echo "Deploying to staging environment..."
+          # Add your staging deployment logic here
+          # Example: rsync, docker, kubernetes, etc.
+          echo "Staging deployment completed"
+
+      - name: Run staging health checks
+        run: |
+          echo "Running health checks..."
+          # Add health check logic here
+          # curl -f https://staging.onusone.com/health || exit 1
+
+  # Deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event.inputs.environment == 'production'
+    environment: production
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: node-backend
+          path: ./node-artifacts
+
+      - name: Download frontend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend
+          path: ./frontend-artifacts
+
+      - name: Deploy to production server
+        run: |
+          echo "Deploying to production environment..."
+          # Add your production deployment logic here
+          # Example: rsync, docker, kubernetes, etc.
+          echo "Production deployment completed"
+
+      - name: Run production health checks
+        run: |
+          echo "Running health checks..."
+          # Add health check logic here
+          # curl -f https://onusone.com/health || exit 1
+
+  # Docker deployment (alternative)
+  docker-deploy:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push node image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./node
+          push: true
+          tags: |
+            onusone/node:latest
+            onusone/node:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            onusone/frontend:latest
+            onusone/frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Kubernetes deployment (alternative)
+  k8s-deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: [build, docker-deploy]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig.yaml
+          export KUBECONFIG=kubeconfig.yaml
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/node-deployment.yaml
+          kubectl apply -f k8s/frontend-deployment.yaml
+          kubectl apply -f k8s/services.yaml
+
+      - name: Wait for deployment
+        run: |
+          kubectl rollout status deployment/onusone-node -n onusone
+          kubectl rollout status deployment/onusone-frontend -n onusone
+
+      - name: Run health checks
+        run: |
+          kubectl port-forward svc/onusone-node 8888:8888 -n onusone &
+          sleep 10
+          curl -f http://localhost:8888/health || exit 1 

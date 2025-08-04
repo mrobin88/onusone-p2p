@@ -1,0 +1,203 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd shared && npm ci
+          cd ../node && npm ci
+          cd ../frontend && npm ci
+
+      - name: Build all components
+        run: |
+          cd shared && npm run build
+          cd ../node && npm run build --if-present
+          cd ../frontend && npm run build
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Extract version from tag
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Generate changelog from commits
+          CHANGELOG=$(git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ steps.changelog.outputs.version }}
+          body: |
+            ## What's Changed
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ## Installation
+            
+            ```bash
+            # Clone the repository
+            git clone https://github.com/mrobin88/onusone-p2p.git
+            cd onusone-p2p
+            
+            # Install dependencies
+            npm run install:all
+            
+            # Start the application
+            npm run dev
+            ```
+            
+            ## Quick Start
+            
+            - Frontend: http://localhost:3000
+            - Node API: http://localhost:8888
+            - Health Check: http://localhost:8888/health
+            
+            ## Features
+            
+            - ✅ Decentralized P2P messaging
+            - ✅ Content decay algorithm
+            - ✅ Web3 integration ready
+            - ✅ Modern React frontend
+            - ✅ TypeScript throughout
+          draft: false
+          prerelease: false
+
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./shared/dist/
+          asset_name: shared-library-${{ steps.changelog.outputs.version }}.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload node assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./node/dist/
+          asset_name: node-backend-${{ steps.changelog.outputs.version }}.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload frontend assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./frontend/.next/
+          asset_name: frontend-${{ steps.changelog.outputs.version }}.tar.gz
+          asset_content_type: application/gzip
+
+  # Update version in package.json files
+  update-versions:
+    name: Update Versions
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update shared version
+        working-directory: ./shared
+        run: |
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+      - name: Update node version
+        working-directory: ./node
+        run: |
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+      - name: Update frontend version
+        working-directory: ./frontend
+        run: |
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+      - name: Update root version
+        run: |
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+      - name: Commit version updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "chore: update versions to ${{ steps.version.outputs.version }}"
+          git push
+
+  # Notify team
+  notify:
+    name: Notify Team
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Send Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: |
+            🚀 New OnusOne P2P release: ${{ steps.version.outputs.version }}
+            
+            Release URL: ${{ steps.create_release.outputs.html_url }}
+            
+            Changes: ${{ steps.changelog.outputs.changelog }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Send Discord notification
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: "OnusOne P2P Release"
+          description: |
+            Version: ${{ steps.version.outputs.version }}
+            URL: ${{ steps.create_release.outputs.html_url }}
+          color: "00ff00" 

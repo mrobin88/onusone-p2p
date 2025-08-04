@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  # Shared library (build dependency)
+  shared:
+    build:
+      context: ./shared
+      dockerfile: Dockerfile
+    image: onusone/shared:latest
+    container_name: onusone-shared
+
+  # Node backend
+  node:
+    build:
+      context: .
+      dockerfile: node/Dockerfile
+    image: onusone/node:latest
+    container_name: onusone-node
+    ports:
+      - "8888:8888"
+    environment:
+      - NODE_ENV=production
+      - HTTP_PORT=8888
+    volumes:
+      - node-data:/app/data
+    depends_on:
+      - shared
+    networks:
+      - onusone-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: onusone/frontend:latest
+    container_name: onusone-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8888
+    depends_on:
+      - shared
+      - node
+    networks:
+      - onusone-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis (for caching and session storage)
+  redis:
+    image: redis:7-alpine
+    container_name: onusone-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - onusone-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # PostgreSQL (for persistent data)
+  postgres:
+    image: postgres:15-alpine
+    container_name: onusone-postgres
+    environment:
+      - POSTGRES_DB=onusone
+      - POSTGRES_USER=onusone
+      - POSTGRES_PASSWORD=onusone_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - onusone-network
+    restart: unless-stopped
+
+  # Nginx (reverse proxy)
+  nginx:
+    image: nginx:alpine
+    container_name: onusone-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - node
+    networks:
+      - onusone-network
+    restart: unless-stopped
+
+  # Monitoring stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: onusone-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - onusone-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: onusone-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - onusone-network
+    restart: unless-stopped
+
+volumes:
+  node-data:
+  redis-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  onusone-network:
+    driver: bridge 
