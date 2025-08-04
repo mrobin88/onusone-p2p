@@ -1,0 +1,83 @@
+name: 🆓 Deploy OnusOne P2P for FREE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy-github-pages:
+    name: 🚀 Deploy to GitHub Pages (100% FREE)
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: 🔧 Install dependencies
+      run: |
+        npm ci
+        cd frontend && npm ci
+        cd ../shared && npm ci
+        
+    - name: 🏗️ Build shared components
+      run: cd shared && npm run build
+      
+    - name: 🌐 Build frontend for GitHub Pages
+      run: |
+        cd frontend
+        npm run build
+        
+    - name: 📄 Create .nojekyll file
+      run: touch frontend/out/.nojekyll
+      
+    - name: 📋 Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: 📤 Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: './frontend/out'
+        
+    - name: 🚀 Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+      
+    - name: 🎉 Success notification
+      run: |
+        echo "🎉 OnusOne P2P deployed for FREE!"
+        echo "🌐 Live at: https://${{ github.repository_owner }}.github.io/onusone-p2p/"
+        echo "💰 Monthly cost: $0"
+        echo "🚀 Ready to get rich off protocols!"
+
+  announce-launch:
+    name: 📢 Announce Free Launch
+    runs-on: ubuntu-latest
+    needs: deploy-github-pages
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 🎊 Create launch announcement
+      run: |
+        echo "🚀 ONUSONE P2P NETWORK IS LIVE!"
+        echo ""
+        echo "✅ Deployed for $0/month"
+        echo "✅ Pure P2P architecture"  
+        echo "✅ Token economics ready"
+        echo "✅ Infinite scalability"
+        echo ""
+        echo "🌐 Try it: https://${{ github.repository_owner }}.github.io/onusone-p2p/"
+        echo "💰 Get rich off protocols!"
+        echo ""
+        echo "#OnusOne #P2P #Decentralized #Free #GetRich"

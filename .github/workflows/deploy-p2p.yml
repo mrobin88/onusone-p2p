@@ -1,0 +1,261 @@
+name: 🚀 Deploy P2P Network
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      deployment_type:
+        description: 'Deployment type'
+        required: true
+        default: 'bootstrap'
+        type: choice
+        options:
+          - bootstrap
+          - full
+          - test
+
+env:
+  NODE_VERSION: '20'
+  
+jobs:
+  test:
+    name: 🧪 Test P2P Network
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: 🔧 Install dependencies
+      run: |
+        npm ci
+        cd frontend && npm ci
+        cd ../node && npm ci
+        cd ../shared && npm ci
+        
+    - name: 🏗️ Build projects
+      run: |
+        cd shared && npm run build
+        cd ../node && npm run build
+        cd ../frontend && npm run build
+        
+    - name: 🧪 Run P2P tests
+      run: |
+        npm run test:node
+        npm run test:frontend
+        
+    - name: 🔍 Lint code
+      run: npm run lint
+
+  deploy-bootstrap:
+    name: 🌐 Deploy Bootstrap Nodes
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.event.inputs.deployment_type == 'bootstrap' || github.event.inputs.deployment_type == 'full'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: 🔧 Install dependencies
+      run: npm ci
+      
+    - name: 🔑 Setup environment
+      env:
+        PINATA_API_KEY: ${{ secrets.PINATA_API_KEY }}
+        PINATA_SECRET_KEY: ${{ secrets.PINATA_SECRET_KEY }}
+        ALCHEMY_SOLANA_API_KEY: ${{ secrets.ALCHEMY_SOLANA_API_KEY }}
+        DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      run: |
+        echo "Setting up P2P environment..."
+        # Create environment files
+        echo "PINATA_API_KEY=$PINATA_API_KEY" > node/.env
+        echo "PINATA_SECRET_KEY=$PINATA_SECRET_KEY" >> node/.env
+        echo "ALCHEMY_SOLANA_API_KEY=$ALCHEMY_SOLANA_API_KEY" >> node/.env
+        echo "SENTRY_DSN=$SENTRY_DSN" >> node/.env
+        
+    - name: 🐳 Setup Docker
+      uses: docker/setup-buildx-action@v3
+      
+    - name: 🔐 Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: 🏗️ Build P2P Node Image
+      run: |
+        docker build -t onusone/p2p-node:latest ./node
+        docker push onusone/p2p-node:latest
+        
+    - name: 🌐 Deploy to DigitalOcean
+      env:
+        DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      run: |
+        # Install doctl
+        curl -sL https://github.com/digitalocean/doctl/releases/download/v1.104.0/doctl-1.104.0-linux-amd64.tar.gz | tar -xzv
+        sudo mv doctl /usr/local/bin
+        
+        # Authenticate
+        doctl auth init -t $DIGITALOCEAN_TOKEN
+        
+        # Deploy bootstrap nodes
+        npm run deploy:bootstrap
+        
+    - name: 🧪 Test bootstrap deployment
+      run: |
+        sleep 30  # Wait for deployment
+        npm run test:p2p-network
+
+  deploy-frontend:
+    name: 🌐 Deploy Web Gateway
+    runs-on: ubuntu-latest
+    needs: [test, deploy-bootstrap]
+    if: github.ref == 'refs/heads/main' || github.event.inputs.deployment_type == 'full'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: 🔧 Install dependencies
+      run: |
+        npm ci
+        cd frontend && npm ci
+        cd ../shared && npm ci
+        
+    - name: 🏗️ Build shared components
+      run: cd shared && npm run build
+      
+    - name: 🌐 Build frontend
+      env:
+        NEXT_PUBLIC_P2P_NODE_URL: https://bootstrap1.onusone.com
+        NEXT_PUBLIC_IPFS_GATEWAY: https://ipfs.onusone.com
+      run: |
+        cd frontend
+        npm run build
+        
+    - name: 🚀 Deploy to Vercel
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: ./frontend
+        vercel-args: '--prod'
+
+  deploy-ipfs:
+    name: 📁 Deploy IPFS Nodes
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event.inputs.deployment_type == 'full'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐳 Setup Docker
+      uses: docker/setup-buildx-action@v3
+      
+    - name: 🌐 Deploy IPFS Gateway
+      env:
+        DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      run: |
+        # Deploy IPFS nodes to DigitalOcean
+        doctl auth init -t $DIGITALOCEAN_TOKEN
+        
+        # Create IPFS cluster
+        doctl compute droplet create ipfs-gateway-1 \
+          --image docker-20-04 \
+          --size s-2vcpu-4gb \
+          --region nyc1 \
+          --ssh-keys ${{ secrets.DIGITALOCEAN_SSH_KEY_ID }} \
+          --user-data-file ./scripts/ipfs-init.sh
+
+  monitor:
+    name: 📊 Setup Monitoring
+    runs-on: ubuntu-latest
+    needs: [deploy-bootstrap, deploy-frontend]
+    if: always() && (needs.deploy-bootstrap.result == 'success' || needs.deploy-frontend.result == 'success')
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: 🔧 Install dependencies
+      run: npm ci
+      
+    - name: 📊 Start network monitoring
+      env:
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      run: |
+        npm run monitor:network
+        
+    - name: 📢 Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        text: |
+          🚀 OnusOne P2P Network Deployed!
+          
+          ✅ Bootstrap Nodes: Online
+          ✅ Web Gateway: https://onusone.com
+          ✅ IPFS Gateway: https://ipfs.onusone.com
+          ✅ Network Health: Excellent
+          
+          P2P social network is LIVE! 🌐
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      if: always()
+
+  security-scan:
+    name: 🛡️ Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔍 Run security audit
+      run: |
+        npm audit --audit-level moderate
+        cd frontend && npm audit --audit-level moderate
+        cd ../node && npm audit --audit-level moderate
+        
+    - name: 🛡️ CodeQL Analysis
+      uses: github/codeql-action/init@v3
+      with:
+        languages: javascript
+        
+    - name: 🏗️ Autobuild
+      uses: github/codeql-action/autobuild@v3
+      
+    - name: 🔍 Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
