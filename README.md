@@ -1,8 +1,10 @@
 # OnusOne P2P - Decentralized Discussion Network
 
-A Web3 social platform where content survives based on community engagement. Take back control. Use what you already have.
+A Web3 social platform where content survives based on community engagement. Use what you already have.
 
-## 🚀 Quick Start
+
+coin name : ONU
+##  Quick Start
 
 ### Prerequisites
 - Node.js 18+ 
