@@ -4,20 +4,18 @@ import { useRouter } from 'next/router';
 import { useLocalAuth } from '../components/LocalAuth';
 import Button from '../components/Button';
 
-// Import our real P2P and token systems
-let realP2PNetwork: any = null;
-let temporalTokenManager: any = null;
+// Mock P2P and token systems for demo
+const mockP2PNetwork = {
+  connectedPeers: 12,
+  networkHealth: 94,
+  messagesProcessed: 1337
+};
 
-// Dynamic imports for browser-only features
-if (typeof window !== 'undefined') {
-  import('../../shared/src/real-p2p').then(module => {
-    realP2PNetwork = module.realP2PNetwork;
-  });
-  
-  import('../../shared/src/temporal-token').then(module => {
-    temporalTokenManager = module.temporalTokenManager;
-  });
-}
+const mockTokenManager = {
+  totalSupply: 1000000,
+  burnedTokens: 50000,
+  activeStakes: 15000
+};
 
 export default function Home() {
   const router = useRouter();

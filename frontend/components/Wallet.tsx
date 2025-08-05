@@ -45,11 +45,11 @@ export default function Wallet() {
           ...prev.transactions.slice(-9), // Keep last 9
           {
             id: `tx_${Date.now()}`,
-            type: Math.random() > 0.5 ? 'reward' : 'burn',
+            type: (Math.random() > 0.5 ? 'reward' : 'burn') as 'stake' | 'burn' | 'reward' | 'fee',
             amount: Math.floor(Math.random() * 10) + 1,
             contentId: `content_${Math.floor(Math.random() * 1000)}`,
             timestamp: new Date(),
-            status: 'confirmed'
+            status: 'confirmed' as 'pending' | 'confirmed' | 'failed'
           }
         ].slice(-10) // Keep last 10 transactions
       }));
@@ -178,10 +178,10 @@ export default function Wallet() {
                         stakedTokens: prev.stakedTokens + stakeAmount,
                         transactions: [{
                           id: `tx_${Date.now()}`,
-                          type: 'stake',
+                          type: 'stake' as 'stake' | 'burn' | 'reward' | 'fee',
                           amount: stakeAmount,
                           timestamp: new Date(),
-                          status: 'confirmed'
+                          status: 'confirmed' as 'pending' | 'confirmed' | 'failed'
                         }, ...prev.transactions].slice(0, 10)
                       }));
                       alert(`🎯 ${stakeAmount} ONU staked on next post!`);
