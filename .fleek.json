@@ -1,0 +1,11 @@
+{
+  "site": {
+    "name": "onusone-p2p",
+    "build": {
+      "command": "cd frontend && npm install && npm run build",
+      "publish": "frontend/out"
+    },
+    "platform": "nextjs-static",
+    "version": "1.0.0"
+  }
+}
