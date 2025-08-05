@@ -29,6 +29,9 @@ jobs:
         cd frontend && npm install
       
     - name: 🌐 Build frontend for GitHub Pages
+      env:
+        NODE_ENV: production
+        NEXT_PUBLIC_BASE_PATH: /onusone-p2p
       run: |
         cd frontend
         npm run build
