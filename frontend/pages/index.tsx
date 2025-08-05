@@ -4,6 +4,21 @@ import { useRouter } from 'next/router';
 import { useLocalAuth } from '../components/LocalAuth';
 import Button from '../components/Button';
 
+// Import our real P2P and token systems
+let realP2PNetwork: any = null;
+let temporalTokenManager: any = null;
+
+// Dynamic imports for browser-only features
+if (typeof window !== 'undefined') {
+  import('../../shared/src/real-p2p').then(module => {
+    realP2PNetwork = module.realP2PNetwork;
+  });
+  
+  import('../../shared/src/temporal-token').then(module => {
+    temporalTokenManager = module.temporalTokenManager;
+  });
+}
+
 export default function Home() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useLocalAuth();

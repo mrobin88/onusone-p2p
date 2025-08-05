@@ -1,6 +1,7 @@
 import type { AppProps } from 'next/app';
 import ClientOnly from '../components/ClientOnly';
 import { LocalAuthProvider } from '../components/LocalAuth';
+import Wallet from '../components/Wallet';
 import '../styles/globals.css';
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -8,6 +9,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <ClientOnly>
       <LocalAuthProvider>
         <Component {...pageProps} />
+        <Wallet />
       </LocalAuthProvider>
     </ClientOnly>
   );
