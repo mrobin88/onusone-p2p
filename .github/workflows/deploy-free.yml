@@ -29,10 +29,6 @@ jobs:
       run: |
         npm ci
         cd frontend && npm ci
-        cd ../shared && npm ci
-        
-    - name: 🏗️ Build shared components
-      run: cd shared && npm run build
       
     - name: 🌐 Build frontend for GitHub Pages
       run: |
