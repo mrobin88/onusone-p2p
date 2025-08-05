@@ -9,17 +9,9 @@ const nextConfig = {
   basePath: process.env.NODE_ENV === 'production' ? '/onusone-p2p' : '',
   // Ensure client-side routing works on GitHub Pages
   experimental: {
-    appDir: false
-  },
-  // Add rewrites for GitHub Pages SPA support
-  async rewrites() {
-    return [
-      {
-        source: '/:path*',
-        destination: '/_next/static/chunks/pages/:path*.js',
-      },
-    ]
+    // Remove appDir since it's not needed
   }
+  // Remove rewrites since they don't work with static export
 }
 
 module.exports = nextConfig
