@@ -118,4 +118,4 @@ peer-id.json
 *.pem
 
 # IPFS
-.ipfs/
+.ipfs/lamp_lighter/
