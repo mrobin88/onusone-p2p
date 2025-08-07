@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "@onusone/shared-components": "file:../shared-components",
+    "@pinata/sdk": "^2.1.0",
     "axios": "^1.11.0"
   }
 }
