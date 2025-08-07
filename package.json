@@ -58,6 +58,7 @@
   "dependencies": {
     "@onusone/shared-components": "file:../shared-components",
     "@pinata/sdk": "^2.1.0",
+    "@sentry/nextjs": "^10.2.0",
     "@vercel/kv": "^3.0.0",
     "axios": "^1.11.0"
   }
