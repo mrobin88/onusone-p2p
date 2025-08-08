@@ -87,79 +87,7 @@ const mockBoards: Record<string, Board> = {
   }
 };
 
-// Enhanced mock messages with P2P features
-const generateMockMessages = (boardSlug: string): Message[] => {
-  const baseMessages = {
-    'general': [
-      {
-        content: 'Welcome to OnusOne P2P! This is truly revolutionary - no more centralized control over our conversations.',
-        author: 'p2p_pioneer',
-        reputation: 245
-      },
-      {
-        content: 'The content decay system is brilliant. I love how quality content naturally rises while spam disappears.',
-        author: 'community_builder',
-        reputation: 180
-      },
-      {
-        content: 'Just set up my own node. The network effect is amazing - more peers = better performance!',
-        author: 'new_member',
-        reputation: 95
-      }
-    ],
-    'technology': [
-      {
-        content: 'The reputation algorithm in our P2P system prevents spam better than any centralized moderation.',
-        author: 'tech_researcher',
-        reputation: 320
-      },
-      {
-        content: 'IPFS integration is working smoothly. Content distribution across peers is lightning fast.',
-        author: 'distributed_dev',
-        reputation: 280
-      },
-      {
-        content: 'Has anyone tested the network with 100+ peers yet? Curious about scaling performance.',
-        author: 'performance_tester',
-        reputation: 150
-      }
-    ],
-    'community': [
-      {
-        content: 'We should discuss governance proposals for the reputation scoring algorithm. What decay rates work best?',
-        author: 'governance_lead',
-        reputation: 380
-      },
-      {
-        content: 'Community-driven content curation is working! Quality discussions are staying alive longer.',
-        author: 'content_curator',
-        reputation: 220
-      },
-      {
-        content: 'New members: check out the onboarding guide. The P2P learning curve is worth it!',
-        author: 'community_helper',
-        reputation: 195
-      }
-    ]
-  };
-
-  const messages = baseMessages[boardSlug as keyof typeof baseMessages] || baseMessages.general;
-  
-  return messages.map((msg, index) => ({
-    id: `${boardSlug}-${index + 1}`,
-    content: msg.content,
-    author: {
-      id: `user-${index + 1}`,
-      username: msg.author,
-      reputation: msg.reputation
-    },
-    boardSlug,
-    createdAt: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(), // Random time in last week
-    decayScore: Math.floor(Math.random() * 30) + 70, // 70-100 range
-    replies: Math.floor(Math.random() * 10),
-    engagements: Math.floor(Math.random() * 25)
-  }));
-};
+// Fetch from KV-backed API instead of mocks
 
 export default function BoardDetail() {
   const router = useRouter();
@@ -190,19 +118,32 @@ export default function BoardDetail() {
           return;
         }
         setBoard(foundBoard);
-
-        // Load cached messages and compute live decay
-        const cached = await loadMessages(slug);
-        const withScores: Message[] = (cached as any[]).map((m) => ({
-          ...m,
-          decayScore: computeDecayScore(m.createdAt, m.engagements),
-        }));
-        setMessages(withScores);
+        // Load from API (KV-backed)
+        try {
+          const res = await fetch(`/api/posts?board=${slug}`);
+          const posts = await res.json();
+          const withScores: Message[] = posts.map((p: any) => ({
+            id: p.id,
+            content: p.content,
+            author: { id: p.authorId || 'anon', username: p.authorId || 'anon', reputation: 100 },
+            boardSlug: p.boardType,
+            createdAt: p.createdAt,
+            decayScore: computeDecayScore(p.createdAt, p.engagements || 0),
+            replies: 0,
+            engagements: p.engagements || 0,
+          }));
+          setMessages(withScores);
+          await saveMessages(slug, withScores as any);
+        } catch (e) {
+          // fallback to cache
+          const cached = await loadMessages(slug);
+          setMessages((cached as any[]));
+        }
 
         // Simulate basic network stats (P2P to be wired next)
         setNetworkStats({
           activePeers: Math.floor(Math.random() * 20) + 8,
-          messagesSynced: withScores.length,
+          messagesSynced: messages.length,
           networkLatency: Math.floor(Math.random() * 50) + 25,
         });
       }

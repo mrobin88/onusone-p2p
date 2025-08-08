@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalAuth } from './LocalAuth';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey, Connection } from '@solana/web3.js';
 
 interface WalletData {
   balance: number;
@@ -21,6 +24,9 @@ interface Transaction {
 export default function Wallet() {
   const { user, isAuthenticated } = useLocalAuth();
   const TOKEN_SYMBOL = process.env.NEXT_PUBLIC_TOKEN_SYMBOL || 'OnU';
+  const { publicKey, connected } = useWallet();
+  const { setVisible } = useWalletModal();
+  const [onuBalance, setOnuBalance] = useState<number>(0);
   const [walletData, setWalletData] = useState<WalletData>({
     balance: 1000, // Starting balance
     stakedTokens: 0,
@@ -31,7 +37,35 @@ export default function Wallet() {
   const [isOpen, setIsOpen] = useState(false);
   const [stakeAmount, setStakeAmount] = useState(100);
 
-  // Simulate wallet data updates
+  // Fetch OnU token balance when wallet changes
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        const mint = process.env.NEXT_PUBLIC_TOKEN_MINT;
+        if (!connected || !publicKey || !mint) return;
+        const endpoint = (process.env.NEXT_PUBLIC_ALCHEMY_SOLANA_API_KEY && /^https?:\/\//.test(process.env.NEXT_PUBLIC_ALCHEMY_SOLANA_API_KEY))
+          ? process.env.NEXT_PUBLIC_ALCHEMY_SOLANA_API_KEY!
+          : (process.env.NEXT_PUBLIC_ALCHEMY_SOLANA_API_KEY
+              ? `https://solana-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_SOLANA_API_KEY}`
+              : 'https://api.mainnet-beta.solana.com');
+        const connection = new Connection(endpoint);
+        // Minimal associated token account lookup
+        const ATA_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+        const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+        const mintKey = new PublicKey(mint);
+        const [ata] = await PublicKey.findProgramAddress(
+          [publicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mintKey.toBuffer()],
+          ATA_PROGRAM_ID
+        );
+        const acc = await connection.getTokenAccountBalance(ata).catch(() => null);
+        const amount = acc?.value?.uiAmount ?? 0;
+        setOnuBalance(amount);
+      } catch {
+        setOnuBalance(0);
+      }
+    };
+    fetchBalance();
+  }, [connected, publicKey]);
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -91,7 +125,8 @@ export default function Wallet() {
   if (!isAuthenticated) {
     return (
       <div className="fixed top-4 right-4 bg-gray-800 p-4 rounded-lg shadow-lg">
-        <p className="text-gray-400">Login to view {TOKEN_SYMBOL} wallet</p>
+        <button className="text-blue-400 underline mr-3" onClick={() => setVisible(true)}>Connect Wallet</button>
+        <span className="text-gray-400">Login to view {TOKEN_SYMBOL} wallet</span>
       </div>
     );
   }
@@ -104,7 +139,7 @@ export default function Wallet() {
         className="fixed top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors duration-200 flex items-center space-x-2"
       >
         <span>💰</span>
-        <span>{formatTokens(walletData.balance)} {TOKEN_SYMBOL}</span>
+        <span>{formatTokens(onuBalance)} {TOKEN_SYMBOL}</span>
       </button>
 
       {/* Wallet Modal */}
