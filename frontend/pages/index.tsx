@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useLocalAuth } from '../components/LocalAuth';
 import Button from '../components/Button';
+import PresenceBeacon from '../components/PresenceBeacon';
 
 // Mock P2P and token systems for demo
 const mockP2PNetwork = {
@@ -32,18 +33,23 @@ export default function Home() {
   useEffect(() => {
     const fetchNetworkStats = async () => {
       try {
-        // In real implementation, this would call your P2P service
-        const response = await fetch('http://localhost:8888/health').catch(() => null);
-        
+        const [presenceRes, boardsRes] = await Promise.all([
+          fetch('/api/presence-count'),
+          fetch('/api/admin/boards').catch(() => null),
+        ]);
+        const presence = await presenceRes.json().catch(() => ({ active: 0 }));
+        const boards = boardsRes ? await boardsRes.json().catch(() => []) : [];
+        const totalMsgs = Array.isArray(boards) ? boards.reduce((s: number, b: any) => s + (b.count || 0), 0) : 0;
+
         setNetworkStats({
-          connectedPeers: Math.floor(Math.random() * 20) + 5,
+          connectedPeers: presence.active || 0,
           userReputation: isAuthenticated ? 100 + Math.floor(Math.random() * 150) : 0,
-          networkHealth: response ? 'Excellent' : 'Connecting...',
-          totalMessages: Math.floor(Math.random() * 1000) + 500,
-          activeDecay: Math.floor(Math.random() * 50) + 10
+          networkHealth: presence.active > 0 ? 'Excellent' : 'Connecting...',
+          totalMessages: totalMsgs,
+          activeDecay: Math.min(100, Math.max(0, Math.round((presence.active ? 18 : 10))))
         });
       } catch (error) {
-        console.log('P2P node not running, showing demo stats');
+        setNetworkStats((prev) => ({ ...prev, networkHealth: 'Connecting...' }));
       }
     };
 
@@ -69,6 +75,7 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
+      <PresenceBeacon />
       <main className="container mx-auto px-4 py-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-4">
