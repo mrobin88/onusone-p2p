@@ -22,12 +22,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
 
-  const user = status === 'authenticated' && session?.user?.name
+  const user: User | null = status === 'authenticated' && session?.user?.name
     ? { 
-        id: (session.user as any).id || session.user.name,
-        username: (session.user as any).username || session.user.name,
-        email: session.user.email,
-        walletAddress: (session.user as any).walletAddress,
+        id: (session.user as any).id || session.user.name || '',
+        username: (session.user as any).username || session.user.name || '',
+        email: session.user.email || undefined,
+        walletAddress: (session.user as any).walletAddress || undefined,
         reputationScore: (session.user as any).reputationScore || 0
       }
     : null;
