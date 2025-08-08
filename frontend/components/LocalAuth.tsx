@@ -1,16 +1,18 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useSession, signIn } from 'next-auth/react';
 
 interface User {
   id: string;
   username: string;
   email?: string;
+  walletAddress?: string;
   reputationScore?: number;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<any>;
   logout: () => void;
   loading: boolean;
 }
@@ -18,50 +20,34 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
 
-  useEffect(() => {
-    // Check for existing session on mount
-    try {
-      const savedUser = localStorage.getItem('onusone_user');
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+  const user = status === 'authenticated' && session?.user?.name
+    ? { 
+        id: (session.user as any).id || session.user.name,
+        username: (session.user as any).username || session.user.name,
+        email: session.user.email,
+        walletAddress: (session.user as any).walletAddress,
+        reputationScore: (session.user as any).reputationScore || 0
       }
-    } catch (error) {
-      console.log('No saved session');
-    }
-    setLoading(false);
-  }, []);
+    : null;
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    // Simple local auth for demo
-    if (username === 'admin' && password === 'admin') {
-      const newUser: User = {
-        id: '1',
-        username: 'admin',
-        email: 'admin@onusone.com',
-        reputationScore: 250
-      };
-      setUser(newUser);
-      localStorage.setItem('onusone_user', JSON.stringify(newUser));
-      return true;
-    }
-    return false;
+  const login = async (username: string, password: string) => {
+    return signIn('credentials', { username, password, redirect: false });
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('onusone_user');
+    // NextAuth handles logout automatically
+    window.location.href = '/';
   };
 
   return (
     <AuthContext.Provider value={{
       user,
-      isAuthenticated: !!user,
+      isAuthenticated: status === 'authenticated',
       login,
       logout,
-      loading
+      loading: status === 'loading',
     }}>
       {children}
     </AuthContext.Provider>

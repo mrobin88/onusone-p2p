@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useLocalAuth } from '../../components/LocalAuth';
 import Button from '../../components/Button';
 
 export default function LoginPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { login, isAuthenticated } = useLocalAuth();
+  const { isAuthenticated } = useLocalAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,30 +27,22 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Try NextAuth credentials first
       const result = await signIn('credentials', {
         redirect: false,
         username,
         password,
       });
+
       if (result?.ok) {
         router.push('/');
-        return;
+      } else {
+        setError('Invalid username or password. Please try again.');
       }
-      // Fallback to local auth demo
-      const success = await login(username, password);
-      if (success) router.push('/');
-      else setError('Invalid credentials. Try admin/admin');
     } catch (err) {
       setError('Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickLogin = () => {
-    setUsername('admin');
-    setPassword('admin');
   };
 
   if (isAuthenticated) {
@@ -90,6 +82,7 @@ export default function LoginPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your username"
                   required
                 />
               </div>
@@ -104,6 +97,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your password"
                   required
                 />
               </div>
@@ -125,14 +119,14 @@ export default function LoginPage() {
 
             <div className="mt-6 pt-6 border-t border-gray-700">
               <div className="text-center">
-                <p className="text-sm text-gray-400 mb-3">Demo Account:</p>
+                <p className="text-sm text-gray-400 mb-3">Don't have an account?</p>
                 <Button
-                  onClick={handleQuickLogin}
+                  onClick={() => router.push('/auth/register')}
                   variant="secondary"
                   size="sm"
                   className="w-full"
                 >
-                  Use admin/admin
+                  Create Account
                 </Button>
               </div>
             </div>

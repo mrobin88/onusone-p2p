@@ -6,36 +6,39 @@ import Button from '../components/Button';
 interface TokenomicsData {
   totalSupply: number;
   circulatingSupply: number;
-  burnedTokens: number;
-  stakedTokens: number;
-  recentBurns: Array<{
-    amount: number;
-    reason: string;
-    timestamp: Date;
-  }>;
-  networkMetrics: {
-    activeStakes: number;
-    contentCreated: number;
-    qualityScore: number;
-    deflationary_rate: number;
+  totalBurned: number;
+  totalStaked: number;
+  burnRate24h: number;
+  burnEvents: number;
+  activeStakes: number;
+  averageStakeSize: number;
+  deflationary: {
+    burnRatePercent: number;
+    projectedSupplyIn1Year: number;
+    deflationaryPressure: string;
   };
+  recentBurns: Array<{
+    postId: string;
+    amount: number;
+    timestamp: string;
+    decayScore: number;
+    txSig?: string;
+  }>;
+  topStakedPosts: Array<{
+    postId: string;
+    stakeTotal: number;
+    burnedTotal: number;
+    remainingStake: number;
+    decayScore: number;
+    createdAt: string;
+  }>;
 }
 
 export default function Tokenomics() {
   const { user, isAuthenticated } = useLocalAuth();
-  const [tokenomicsData, setTokenomicsData] = useState<TokenomicsData>({
-    totalSupply: 1_000_000_000, // 1 billion initial
-    circulatingSupply: 950_000_000,
-    burnedTokens: 50_000_000,
-    stakedTokens: 15_000_000,
-    recentBurns: [],
-    networkMetrics: {
-      activeStakes: 1_234,
-      contentCreated: 5_678,
-      qualityScore: 87.3,
-      deflationary_rate: 2.4
-    }
-  });
+  const [tokenomicsData, setTokenomicsData] = useState<TokenomicsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Simulate real-time token burns
   useEffect(() => {

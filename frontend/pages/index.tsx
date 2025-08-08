@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { useLocalAuth } from '../components/LocalAuth';
 import Button from '../components/Button';
 import PresenceBeacon from '../components/PresenceBeacon';
+import ReputationDisplay from '../components/ReputationDisplay';
 
 // Mock P2P and token systems for demo
 const mockP2PNetwork = {
@@ -105,10 +106,10 @@ export default function Home() {
                 <span className="text-gray-400">Active Decay:</span>
                 <span className="text-red-400 ml-2 font-bold">{networkStats.activeDecay}%</span>
               </div>
-              {isAuthenticated && (
+              {isAuthenticated && user && (
                 <div className="md:col-span-2">
                   <span className="text-gray-400">Your Reputation:</span>
-                  <span className="text-purple-400 ml-2 font-bold">{networkStats.userReputation}</span>
+                  <ReputationDisplay userId={user.id} compact={true} className="ml-2" />
                 </div>
               )}
             </div>

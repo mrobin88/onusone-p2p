@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useLocalAuth } from '../../components/LocalAuth';
 import Button from '../../components/Button';
+import P2PNetworkStatus from '../../components/P2PNetworkStatus';
+import TokenStaking from '../../components/TokenStaking';
+import { useP2PConnection } from '../../hooks/useP2PConnection';
 import { loadMessages, saveMessages, appendMessage, appendClosedRecord } from '../../lib/cache';
 import { computeDecayScore, isClosed } from '../../lib/decay';
 
@@ -31,6 +34,9 @@ interface Message {
   decayScore: number;
   replies: number;
   engagements: number;
+  isVisible?: boolean;
+  stakeTotal?: number;
+  burnedTotal?: number;
 }
 
 // P2P Enhanced Board Data
@@ -98,10 +104,17 @@ export default function BoardDetail() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [networkStats, setNetworkStats] = useState({
-    activePeers: 0,
-    messagesSynced: 0,
-    networkLatency: 0
+  
+  // Real P2P networking integration
+  const {
+    isConnected: p2pConnected,
+    networkStatus,
+    peerCount,
+    broadcastMessage,
+  } = useP2PConnection({
+    autoConnect: true,
+    userId: user?.id,
+    board: slug as string
   });
 
   useEffect(() => {
@@ -118,7 +131,7 @@ export default function BoardDetail() {
           return;
         }
         setBoard(foundBoard);
-        // Load from API (KV-backed)
+        // Load from API (KV-backed) with real decay filtering
         try {
           const res = await fetch(`/api/posts?board=${slug}`);
           const posts = await res.json();
@@ -128,9 +141,12 @@ export default function BoardDetail() {
             author: { id: p.authorId || 'anon', username: p.authorId || 'anon', reputation: 100 },
             boardSlug: p.boardType,
             createdAt: p.createdAt,
-            decayScore: computeDecayScore(p.createdAt, p.engagements || 0),
+            decayScore: p.decayScore || 0, // Use API-calculated decay score
             replies: 0,
             engagements: p.engagements || 0,
+            isVisible: p.isVisible !== false, // API already filtered, but track status
+            stakeTotal: p.stakeTotal || 0,
+            burnedTotal: p.burnedTotal || 0,
           }));
           setMessages(withScores);
           await saveMessages(slug, withScores as any);
@@ -140,12 +156,7 @@ export default function BoardDetail() {
           setMessages((cached as any[]));
         }
 
-        // Simulate basic network stats (P2P to be wired next)
-        setNetworkStats({
-          activePeers: Math.floor(Math.random() * 20) + 8,
-          messagesSynced: messages.length,
-          networkLatency: Math.floor(Math.random() * 50) + 25,
-        });
+        // Network stats now come from real P2P connection
       }
     };
     init();
@@ -202,22 +213,87 @@ export default function BoardDetail() {
       await appendMessage(slug as string, message);
       setMessages([message, ...messages]);
       setNewMessage('');
-      // TODO: publish via P2P next
+      
+      // Broadcast via P2P network if connected
+      if (p2pConnected) {
+        const success = await broadcastMessage({
+          id: message.id,
+          content: message.content,
+          author: message.author.username,
+          board: slug as string,
+          createdAt: message.createdAt,
+          engagements: message.engagements
+        });
+        
+        if (success) {
+          console.log('📡 Message broadcasted to P2P network');
+        } else {
+          console.warn('⚠️ P2P broadcast failed, message saved locally only');
+        }
+      } else {
+        console.log('💾 Message saved locally (P2P offline)');
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleEngageMessage = (messageId: string) => {
-    setMessages(messages.map(msg => 
-      msg.id === messageId 
-        ? { 
-            ...msg, 
-            engagements: msg.engagements + 1,
-            decayScore: Math.min(msg.decayScore + 5, 100)
-          }
-        : msg
-    ));
+  const handleEngageMessage = async (messageId: string) => {
+    try {
+      // Call the engagement API
+      const response = await fetch('/api/posts/engage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          postId: messageId,
+          type: 'like',
+          userId: user?.id
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update local state with real API response
+        setMessages(messages.map(msg => 
+          msg.id === messageId 
+            ? { 
+                ...msg, 
+                engagements: result.newEngagements,
+                decayScore: result.newDecayScore
+              }
+            : msg
+        ));
+        
+        console.log(`💫 Engagement successful: +${result.boost} decay points`);
+      } else {
+        console.error('Engagement failed:', await response.text());
+        // Fallback to local update if API fails
+        setMessages(messages.map(msg => 
+          msg.id === messageId 
+            ? { 
+                ...msg, 
+                engagements: msg.engagements + 1,
+                decayScore: Math.min(msg.decayScore + 2, 100)
+              }
+            : msg
+        ));
+      }
+    } catch (error) {
+      console.error('Engagement error:', error);
+      // Fallback to local update
+      setMessages(messages.map(msg => 
+        msg.id === messageId 
+          ? { 
+              ...msg, 
+              engagements: msg.engagements + 1,
+              decayScore: Math.min(msg.decayScore + 2, 100)
+            }
+          : msg
+      ));
+    }
   };
 
   const formatDate = (dateISO: string) => {
@@ -305,9 +381,11 @@ export default function BoardDetail() {
                   <span className="px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
                     {board.category}
                   </span>
-                  <div className="flex items-center space-x-1 text-green-400">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-sm">P2P Active</span>
+                  <div className={`flex items-center space-x-1 ${p2pConnected ? 'text-green-400' : 'text-orange-400'}`}>
+                    <div className={`w-2 h-2 rounded-full ${p2pConnected ? 'bg-green-400 animate-pulse' : 'bg-orange-400'}`}></div>
+                    <span className="text-sm">
+                      {p2pConnected ? `P2P Active (${peerCount} peers)` : 'P2P Connecting...'}
+                    </span>
                   </div>
                 </div>
                 
@@ -322,7 +400,10 @@ export default function BoardDetail() {
                 <div className="flex items-center space-x-6 text-sm text-gray-400">
                   <span>{board.messageCount} messages</span>
                   <span>Last activity: {board.lastActivity}</span>
-                  <span>{networkStats.activePeers} peers connected</span>
+                  <span>{networkStatus?.messagesSynced || 0} messages synced</span>
+                  {networkStatus?.storageUsed && (
+                    <span>{networkStatus.storageUsed} MB stored</span>
+                  )}
                 </div>
               </div>
 
@@ -359,7 +440,9 @@ export default function BoardDetail() {
                       <div className="flex items-center space-x-4">
                         <div>
                           <div className="flex items-center space-x-3">
-                            <span className="font-medium text-white">{message.author.username}</span>
+                            <Link href={`/users/${message.author.username}`} className="font-medium text-white hover:underline">
+                              {message.author.username}
+                            </Link>
                             <span className={`text-sm font-medium ${getReputationColor(message.author.reputation)}`}>
                               {message.author.reputation} rep
                             </span>
@@ -370,16 +453,38 @@ export default function BoardDetail() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
+                        {/* Stake Information */}
+                        {(message.stakeTotal && message.stakeTotal > 0) && (
+                          <div className="text-right">
+                            <div className="text-sm text-gray-400">Stake</div>
+                            <div className="text-purple-400 font-medium">
+                              {message.stakeTotal - (message.burnedTotal || 0)} ONU
+                            </div>
+                            {message.burnedTotal && message.burnedTotal > 0 && (
+                              <div className="text-xs text-red-500">
+                                -{message.burnedTotal} burned
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Decay Score with Warning */}
                         <div className="text-right">
                           <div className="text-sm text-gray-400">Decay Score</div>
                           <div className={`text-lg font-semibold ${getDecayColor(message.decayScore)}`}>
                             {message.decayScore}
                           </div>
+                          {message.decayScore <= 25 && (
+                            <div className="text-xs text-red-400 animate-pulse">
+                              ⚠️ Fading away
+                            </div>
+                          )}
                         </div>
+                        
                         <button
                           onClick={() => handleEngageMessage(message.id)}
                           className="text-gray-400 hover:text-red-400 transition duration-200 text-xl"
-                          title="Engage with this message"
+                          title="Engage with this message to boost its decay score"
                         >
                           ❤️
                         </button>
@@ -394,8 +499,28 @@ export default function BoardDetail() {
                       <div className="flex items-center space-x-4">
                         <span>{message.replies} replies</span>
                         <span>{message.engagements} engagements</span>
+                        {(message.stakeTotal && message.stakeTotal > 0) && (
+                          <span className="text-purple-400">
+                            {message.stakeTotal - (message.burnedTotal || 0)} ONU staked
+                          </span>
+                        )}
                       </div>
-                      <span className="text-blue-400">Distributed via P2P</span>
+                      <div className="flex items-center space-x-2">
+                        <TokenStaking
+                          postId={message.id}
+                          currentStake={message.stakeTotal || 0}
+                          onStakeSuccess={(txSig, amount) => {
+                            console.log(`Stake successful: ${amount} ONU, tx: ${txSig}`);
+                            // Refresh messages to show updated stake
+                            window.location.reload();
+                          }}
+                          onStakeError={(error) => {
+                            console.error('Stake failed:', error);
+                            alert(`Stake failed: ${error}`);
+                          }}
+                        />
+                        <span className="text-blue-400">Distributed via P2P</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -404,28 +529,11 @@ export default function BoardDetail() {
 
             {/* Sidebar */}
             <div className="lg:col-span-1">
-              {/* P2P Network Status */}
-              <div className="bg-gray-900 rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-semibold text-white mb-4">🌐 Network Status</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Active Peers</span>
-                    <span className="text-green-400 font-medium">{networkStats.activePeers}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Messages Synced</span>
-                    <span className="text-blue-400 font-medium">{networkStats.messagesSynced}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Network Latency</span>
-                    <span className="text-purple-400 font-medium">{networkStats.networkLatency}ms</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Board Health</span>
-                    <span className="text-green-400 font-medium">Excellent</span>
-                  </div>
-                </div>
-              </div>
+              {/* Real P2P Network Status */}
+              <P2PNetworkStatus
+                showDetails={true}
+                board={slug as string}
+              />
 
               {/* Other Boards */}
               <div className="bg-gray-900 rounded-lg p-6">

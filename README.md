@@ -1,4 +1,4 @@
-# OnusOne P2P - Decentralized Discussion Network
+out# OnusOne P2P - Decentralized Discussion Network
 
 A Web3 social platform where content survives based on community engagement. Use what you already have.
 
