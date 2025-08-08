@@ -154,7 +154,7 @@ const generateMockMessages = (boardSlug: string): Message[] => {
       reputation: msg.reputation
     },
     boardSlug,
-    createdAt: new Date(Date.now() - Math.random() * 86400000 * 7), // Random time in last week
+    createdAt: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(), // Random time in last week
     decayScore: Math.floor(Math.random() * 30) + 70, // 70-100 range
     replies: Math.floor(Math.random() * 10),
     engagements: Math.floor(Math.random() * 25)
