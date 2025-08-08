@@ -20,10 +20,10 @@
     "@solana/spl-token": "^0.3.9",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-phantom": "^0.9.28",
-    "@solana/wallet-adapter-react": "^0.15.39",
-    "@solana/wallet-adapter-react-ui": "^0.9.39",
-    "@solana/wallet-adapter-solflare": "^0.6.32",
-    "@solana/wallet-adapter-wallets": "^0.19.26",
+    "@solana/wallet-adapter-react": "^0.15.35",
+    "@solana/wallet-adapter-react-ui": "^0.9.35",
+    "@solana/wallet-adapter-solflare": "^0.6.28",
+    "@solana/wallet-adapter-wallets": "^0.19.22",
     "@solana/web3.js": "^1.87.6",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.42",
@@ -73,6 +73,30 @@
     "eslint-config-next": "^14.0.4",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0"
+  },
+  "overrides": {
+    "qrcode.react": {
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0"
+    },
+    "@keystonehq/sdk": {
+      "qrcode.react": {
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
+      }
+    },
+    "@solana/wallet-adapter-react": {
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0"
+    },
+    "@solana/wallet-adapter-react-ui": {
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0"
+    }
+  },
+  "resolutions": {
+    "qrcode.react/react": "^18.2.0",
+    "qrcode.react/react-dom": "^18.2.0"
   },
   "keywords": [
     "onusone",
