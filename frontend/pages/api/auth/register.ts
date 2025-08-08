@@ -1,7 +1,7 @@
 // pages/api/auth/register.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
-import { kv } from '@vercel/kv';
+import { kv } from '../../../lib/kv-wrapper';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {

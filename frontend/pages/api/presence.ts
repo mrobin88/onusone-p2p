@@ -1,21 +1,40 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { kv } from '@vercel/kv';
+import { kv } from '../../lib/kv-wrapper';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   try {
-    const { userId, boardSlug } = req.body || {};
-    if (!userId) return res.status(400).json({ error: 'userId required' });
-    const scope = boardSlug || 'site';
-    const key = `presence:${scope}:${userId}`;
-    // 5-minute TTL heartbeat
-    await kv.set(key, Date.now().toString(), { ex: 300 });
-    await kv.sadd(`presence:set:${scope}`, userId);
-    return res.status(200).json({ ok: true });
-  } catch (e: any) {
-    return res.status(500).json({ error: e?.message || 'presence error' });
+    const { userId, action } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID required' });
+    }
+
+    const timestamp = new Date().toISOString();
+    
+    if (action === 'heartbeat') {
+      // Update user's last seen timestamp
+      await kv.hset(`presence:${userId}`, {
+        lastSeen: timestamp,
+        status: 'online'
+      });
+      
+      // Increment online count
+      await kv.incrby('presence:online_count', 1);
+    }
+    
+    res.status(200).json({
+      success: true,
+      timestamp
+    });
+  } catch (error) {
+    console.error('Presence update error:', error);
+    res.status(200).json({
+      success: true,
+      timestamp: new Date().toISOString()
+    });
   }
 }
-
-

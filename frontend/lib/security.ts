@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-import { kv } from '@vercel/kv';
+import { kv } from './kv-wrapper';
 
 // Enhanced rate limiting configuration
 export const RATE_LIMITS = {

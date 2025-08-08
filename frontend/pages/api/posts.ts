@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { kv } from '@vercel/kv';
+import { kv } from '../../lib/kv-wrapper';
 import { withSecurity, CommonSchemas, SecurityManager, InputSanitizer } from '../../lib/security';
 import { getDataLayer } from '../../lib/data-layer';
 

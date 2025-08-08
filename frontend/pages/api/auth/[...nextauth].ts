@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { kv } from '@vercel/kv';
+import { kv } from '../../../lib/kv-wrapper';
 import bcrypt from 'bcryptjs';
 
 export default NextAuth({
