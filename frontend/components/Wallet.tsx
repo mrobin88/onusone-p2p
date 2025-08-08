@@ -20,6 +20,7 @@ interface Transaction {
 
 export default function Wallet() {
   const { user, isAuthenticated } = useLocalAuth();
+  const TOKEN_SYMBOL = process.env.NEXT_PUBLIC_TOKEN_SYMBOL || 'OnU';
   const [walletData, setWalletData] = useState<WalletData>({
     balance: 1000, // Starting balance
     stakedTokens: 0,
@@ -90,7 +91,7 @@ export default function Wallet() {
   if (!isAuthenticated) {
     return (
       <div className="fixed top-4 right-4 bg-gray-800 p-4 rounded-lg shadow-lg">
-        <p className="text-gray-400">Login to view wallet</p>
+        <p className="text-gray-400">Login to view {TOKEN_SYMBOL} wallet</p>
       </div>
     );
   }
@@ -103,7 +104,7 @@ export default function Wallet() {
         className="fixed top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors duration-200 flex items-center space-x-2"
       >
         <span>💰</span>
-        <span>{formatTokens(walletData.balance)} ONU</span>
+        <span>{formatTokens(walletData.balance)} {TOKEN_SYMBOL}</span>
       </button>
 
       {/* Wallet Modal */}
@@ -127,17 +128,17 @@ export default function Wallet() {
             {/* Balance Section */}
             <div className="p-6 border-b border-gray-700">
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
+              <div className="text-center">
                   <div className="text-2xl font-bold text-green-400">
                     {formatTokens(walletData.balance)}
                   </div>
-                  <div className="text-sm text-gray-400">Available</div>
+                <div className="text-sm text-gray-400">Available</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-400">
                     {formatTokens(walletData.stakedTokens)}
                   </div>
-                  <div className="text-sm text-gray-400">Staked</div>
+                <div className="text-sm text-gray-400">Staked</div>
                 </div>
               </div>
               
@@ -165,7 +166,7 @@ export default function Wallet() {
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(parseInt(e.target.value) || 0)}
                   className="flex-1 bg-gray-800 border border-gray-600 rounded px-3 py-1 text-white text-sm"
-                  placeholder="Amount to stake"
+                  placeholder={`Amount to stake (${TOKEN_SYMBOL})`}
                   min="10"
                   max="1000"
                 />
@@ -184,7 +185,7 @@ export default function Wallet() {
                           status: 'confirmed' as 'pending' | 'confirmed' | 'failed'
                         }, ...prev.transactions].slice(0, 10)
                       }));
-                      alert(`🎯 ${stakeAmount} ONU staked on next post!`);
+                      alert(`🎯 ${stakeAmount} ${TOKEN_SYMBOL} staked on next post!`);
                     } else {
                       alert('❌ Invalid stake amount (10-1000 ONU)');
                     }
@@ -195,7 +196,7 @@ export default function Wallet() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Stake tokens to post content (10-1000 ONU)
+                Stake tokens to post content (10-1000 {TOKEN_SYMBOL})
               </p>
             </div>
 
@@ -215,7 +216,7 @@ export default function Wallet() {
                         </span>
                       </div>
                       <div className={`font-semibold ${getTransactionColor(tx.type)}`}>
-                        {tx.type === 'burn' || tx.type === 'stake' ? '-' : '+'}{tx.amount} ONU
+                        {tx.type === 'burn' || tx.type === 'stake' ? '-' : '+'}{tx.amount} {TOKEN_SYMBOL}
                       </div>
                     </div>
                   ))

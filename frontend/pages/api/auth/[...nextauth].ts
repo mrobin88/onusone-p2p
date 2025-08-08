@@ -5,6 +5,22 @@ import bcrypt from 'bcryptjs';
 
 export default NextAuth({
   session: { strategy: 'jwt' },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        // persist user id in token
+        (token as any).uid = (user as any).id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // expose id on session.user
+      if (session?.user) {
+        (session.user as any).id = (token as any).uid;
+      }
+      return session;
+    }
+  },
   providers: [
     Credentials({
       name: 'Credentials',
@@ -22,10 +38,6 @@ export default NextAuth({
         if (user && user.passwordHash) {
           const ok = await bcrypt.compare(password, user.passwordHash);
           if (ok) return { id: user.id, name: user.username, email: user.email } as any;
-        }
-        // Demo fallback
-        if (username === 'admin' && password === 'admin') {
-          return { id: '1', name: 'admin', email: 'admin@onusone.com' } as any;
         }
         return null;
       }
