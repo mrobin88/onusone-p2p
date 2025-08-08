@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useLocalAuth } from '../../components/LocalAuth';
 import Button from '../../components/Button';
+import { loadMessages, saveMessages, appendMessage, appendClosedRecord } from '../../lib/cache';
+import { computeDecayScore, isClosed } from '../../lib/decay';
 
 interface Board {
   id: string;
@@ -25,7 +27,7 @@ interface Message {
     reputation: number;
   };
   boardSlug: string;
-  createdAt: Date;
+  createdAt: string; // ISO string
   decayScore: number;
   replies: number;
   engagements: number;
@@ -180,23 +182,58 @@ export default function BoardDetail() {
       return;
     }
 
-    if (slug && typeof slug === 'string') {
-      const foundBoard = mockBoards[slug];
-      if (foundBoard) {
+    const init = async () => {
+      if (slug && typeof slug === 'string') {
+        const foundBoard = mockBoards[slug];
+        if (!foundBoard) {
+          router.push('/boards');
+          return;
+        }
         setBoard(foundBoard);
-        setMessages(generateMockMessages(slug));
-        
-        // Simulate P2P network stats
+
+        // Load cached messages and compute live decay
+        const cached = await loadMessages(slug);
+        const withScores: Message[] = (cached as any[]).map((m) => ({
+          ...m,
+          decayScore: computeDecayScore(m.createdAt, m.engagements),
+        }));
+        setMessages(withScores);
+
+        // Simulate basic network stats (P2P to be wired next)
         setNetworkStats({
           activePeers: Math.floor(Math.random() * 20) + 8,
-          messagesSynced: foundBoard.messageCount,
-          networkLatency: Math.floor(Math.random() * 50) + 25
+          messagesSynced: withScores.length,
+          networkLatency: Math.floor(Math.random() * 50) + 25,
         });
-      } else {
-        router.push('/boards');
       }
-    }
+    };
+    init();
   }, [slug, isAuthenticated, router]);
+
+  // Re-compute decay periodically and close-out old messages
+  useEffect(() => {
+    if (!slug || typeof slug !== 'string') return;
+    const interval = setInterval(async () => {
+      setMessages((prev) => {
+        const updated = prev
+          .map((m) => ({
+            ...m,
+            decayScore: computeDecayScore(m.createdAt, m.engagements),
+          }))
+          .filter((m) => {
+            const closed = isClosed(m.decayScore);
+            if (closed) {
+              appendClosedRecord({ id: m.id, boardSlug: m.boardSlug, closedAt: new Date().toISOString() });
+            }
+            return !closed;
+          });
+        // Persist updated list
+        saveMessages(slug, updated);
+        return updated;
+      });
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [slug]);
 
   const handleSubmitMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,14 +252,16 @@ export default function BoardDetail() {
           reputation: 100 + Math.floor(Math.random() * 150)
         },
         boardSlug: slug as string,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         decayScore: 100, // New messages start with perfect score
         replies: 0,
         engagements: 0
       };
-
+      // Save locally and update UI
+      await appendMessage(slug as string, message);
       setMessages([message, ...messages]);
       setNewMessage('');
+      // TODO: publish via P2P next
     } finally {
       setSubmitting(false);
     }
@@ -240,13 +279,13 @@ export default function BoardDetail() {
     ));
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateISO: string) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date);
+    }).format(new Date(dateISO));
   };
 
   const getDecayColor = (score: number) => {
