@@ -217,6 +217,33 @@ class MockKV {
     return await this.exists(key) ? -1 : -2;
   }
 
+  async incr(key: string): Promise<number> {
+    return this.incrby(key, 1);
+  }
+
+  // Mock pipeline for batch operations
+  pipeline() {
+    const operations: Array<() => Promise<any>> = [];
+    
+    return {
+      hgetall: (key: string) => {
+        operations.push(() => this.hgetall(key));
+        return this;
+      },
+      exec: async () => {
+        const results = [];
+        for (const op of operations) {
+          try {
+            results.push(await op());
+          } catch (error) {
+            results.push(null);
+          }
+        }
+        return results;
+      }
+    };
+  }
+
   // Debug method
   debug(): void {
     console.log('MockKV Data:', {

@@ -153,6 +153,25 @@ export const kv = {
   async ttl(key: string) {
     const kvClient = await getKV();
     return kvClient.ttl(key);
+  },
+
+  async incr(key: string) {
+    const kvClient = await getKV();
+    return kvClient.incr ? kvClient.incr(key) : kvClient.incrby(key, 1);
+  },
+
+  async pipeline() {
+    const kvClient = await getKV();
+    // Mock storage doesn't support pipeline, return a mock
+    if (kvClient.pipeline) {
+      return kvClient.pipeline();
+    } else {
+      // Return a mock pipeline for the mock storage
+      return {
+        hgetall: (key: string) => kvClient.hgetall(key),
+        exec: async () => []
+      };
+    }
   }
 };
 
