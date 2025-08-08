@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import { useLocalAuth } from '../../components/LocalAuth';
 import Button from '../../components/Button';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { login, isAuthenticated } = useLocalAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -14,10 +16,10 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   React.useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated || session) {
       router.push('/');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,12 +27,20 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const success = await login(username, password);
-      if (success) {
+      // Try NextAuth credentials first
+      const result = await signIn('credentials', {
+        redirect: false,
+        username,
+        password,
+      });
+      if (result?.ok) {
         router.push('/');
-      } else {
-        setError('Invalid credentials. Try admin/admin');
+        return;
       }
+      // Fallback to local auth demo
+      const success = await login(username, password);
+      if (success) router.push('/');
+      else setError('Invalid credentials. Try admin/admin');
     } catch (err) {
       setError('Login failed. Please try again.');
     } finally {
