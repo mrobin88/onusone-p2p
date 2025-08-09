@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { signIn, useSession } from 'next-auth/react';
-import { useLocalAuth } from '../../components/LocalAuth';
+import { useWalletAuth } from '../../components/WalletAuth';
 import Button from '../../components/Button';
 
 export default function LoginPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { isAuthenticated } = useLocalAuth();
+  const { isAuthenticated } = useWalletAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);

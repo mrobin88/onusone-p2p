@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useLocalAuth } from '../components/LocalAuth';
+import { useWalletAuth } from '../components/WalletAuth';
 import Button from '../components/Button';
 
 export default function P2PDemo() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useLocalAuth();
+  const { user, isAuthenticated, logout } = useWalletAuth();
   const [networkStats, setNetworkStats] = useState({
     connectedPeers: 0,
     userReputation: 100,

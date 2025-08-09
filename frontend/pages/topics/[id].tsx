@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useLocalAuth } from '../../components/LocalAuth';
+import { useWalletAuth } from '../../components/WalletAuth';
 import Button from '../../components/Button';
 
 interface Topic {
@@ -184,7 +184,7 @@ const mockComments: Comment[] = [
 export default function TopicDetail() {
   const router = useRouter();
   const { id } = router.query;
-  const { user, isAuthenticated, logout } = useLocalAuth();
+  const { user, isAuthenticated, logout } = useWalletAuth();
   
   const [topic, setTopic] = useState<Topic | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);

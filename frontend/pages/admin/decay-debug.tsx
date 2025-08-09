@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useLocalAuth } from '../../components/LocalAuth';
+import { useWalletAuth } from '../../components/WalletAuth';
 import Button from '../../components/Button';
 
 interface PostWithDecay {
@@ -19,7 +19,7 @@ interface PostWithDecay {
 }
 
 export default function DecayDebug() {
-  const { user, isAuthenticated } = useLocalAuth();
+  const { user, isAuthenticated } = useWalletAuth();
   const [posts, setPosts] = useState<PostWithDecay[]>([]);
   const [board, setBoard] = useState('general');
   const [includeHidden, setIncludeHidden] = useState(true);

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
-import { useLocalAuth } from '../../components/LocalAuth';
+import { useWalletAuth } from '../../components/WalletAuth';
 import Button from '../../components/Button';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { isAuthenticated } = useLocalAuth();
+  const { isAuthenticated } = useWalletAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',

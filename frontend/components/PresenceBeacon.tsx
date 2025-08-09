@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from 'react';
-import { useLocalAuth } from './LocalAuth';
+import { useWalletAuth } from './WalletAuth';
 
 function getOrCreateAnonId(): string {
   try {
@@ -16,7 +16,7 @@ function getOrCreateAnonId(): string {
 }
 
 export default function PresenceBeacon() {
-  const { user } = useLocalAuth();
+  const { user } = useWalletAuth();
 
   useEffect(() => {
     let stopped = false;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useP2PConnection } from '../hooks/useP2PConnection';
-import { useLocalAuth } from './LocalAuth';
+import { useWalletAuth } from './WalletAuth';
 import Button from './Button';
 
 interface P2PNetworkStatusProps {
@@ -14,7 +14,7 @@ export default function P2PNetworkStatus({
   compact = false,
   board 
 }: P2PNetworkStatusProps) {
-  const { user } = useLocalAuth();
+  const { user } = useWalletAuth();
   const {
     isConnected,
     isConnecting,

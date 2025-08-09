@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { useLocalAuth } from '../components/LocalAuth';
+import { useWalletAuth } from '../components/WalletAuth';
 import Button from '../components/Button';
 
 interface TokenomicsData {
@@ -35,7 +35,7 @@ interface TokenomicsData {
 }
 
 export default function TokenomicsReal() {
-  const { user, isAuthenticated } = useLocalAuth();
+  const { user, isAuthenticated } = useWalletAuth();
   const [tokenomicsData, setTokenomicsData] = useState<TokenomicsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

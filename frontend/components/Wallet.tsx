@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocalAuth } from './LocalAuth';
+import { useWalletAuth } from './WalletAuth';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, Connection } from '@solana/web3.js';
@@ -22,7 +22,7 @@ interface Transaction {
 }
 
 export default function Wallet() {
-  const { user, isAuthenticated } = useLocalAuth();
+  const { user, isAuthenticated } = useWalletAuth();
   const TOKEN_SYMBOL = process.env.NEXT_PUBLIC_TOKEN_SYMBOL || 'OnU';
   const { publicKey, connected } = useWallet();
   const { setVisible } = useWalletModal();

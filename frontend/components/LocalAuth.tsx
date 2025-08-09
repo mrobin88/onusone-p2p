@@ -19,7 +19,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
+export function WalletAuthProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
 
   const user: User | null = status === 'authenticated' && session?.user?.name
@@ -54,10 +54,10 @@ export function LocalAuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useLocalAuth() {
+export function useWalletAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useLocalAuth must be used within a LocalAuthProvider');
+    throw new Error('useWalletAuth must be used within a WalletAuthProvider');
   }
   return context;
 }

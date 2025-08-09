@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useLocalAuth } from '../../components/LocalAuth';
+import { useWalletAuth } from '../../components/WalletAuth';
 import Button from '../../components/Button';
 
 interface SecurityEvent {
@@ -29,7 +29,7 @@ interface SecurityStats {
 }
 
 export default function SecurityMonitor() {
-  const { user, isAuthenticated } = useLocalAuth();
+  const { user, isAuthenticated } = useWalletAuth();
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
   const [rateLimitStats, setRateLimitStats] = useState<RateLimitStats[]>([]);
   const [securityStats, setSecurityStats] = useState<SecurityStats | null>(null);

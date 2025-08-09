@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocalAuth } from './LocalAuth';
+import { useWalletAuth } from './WalletAuth';
 import { ReputationActionType } from '../lib/reputation-manager';
 import Button from './Button';
 
@@ -60,7 +60,7 @@ export default function ReputationDisplay({
   showActions = false,
   className = ''
 }: ReputationDisplayProps) {
-  const { user } = useLocalAuth();
+  const { user } = useWalletAuth();
   const [reputation, setReputation] = useState<ReputationData | null>(null);
   const [summary, setSummary] = useState<ReputationSummary | null>(null);
   const [recentActions, setRecentActions] = useState<ReputationAction[]>([]);

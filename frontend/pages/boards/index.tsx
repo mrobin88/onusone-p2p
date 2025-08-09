@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useLocalAuth } from '../../components/LocalAuth';
+import { useWalletAuth } from '../../components/WalletAuth';
 import Button from '../../components/Button';
 
 interface Board {
@@ -96,7 +96,7 @@ const mockBoards: Board[] = [
 
 export default function BoardsIndex() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useLocalAuth();
+  const { user, isAuthenticated, logout } = useWalletAuth();
   const [networkStats, setNetworkStats] = useState({
     totalPeers: 0,
     totalMessages: 0,

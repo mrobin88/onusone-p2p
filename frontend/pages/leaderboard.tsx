@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useLocalAuth } from '../components/LocalAuth';
+import { useWalletAuth } from '../components/WalletAuth';
 import ReputationDisplay from '../components/ReputationDisplay';
 
 interface LeaderboardUser {
@@ -43,7 +43,7 @@ interface GlobalStats {
 }
 
 export default function Leaderboard() {
-  const { user, isAuthenticated } = useLocalAuth();
+  const { user, isAuthenticated } = useWalletAuth();
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [trending, setTrending] = useState<TrendingUser[]>([]);
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);

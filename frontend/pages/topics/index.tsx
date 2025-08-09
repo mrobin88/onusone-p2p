@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useLocalAuth } from '../../components/LocalAuth';
+import { useWalletAuth } from '../../components/WalletAuth';
 import Button from '../../components/Button';
 
 interface Topic {
@@ -87,7 +87,7 @@ const mockTopics: Topic[] = [
 
 export default function TopicsIndex() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useLocalAuth();
+  const { user, isAuthenticated, logout } = useWalletAuth();
   const [topics, setTopics] = useState<Topic[]>(mockTopics);
   const [networkStats, setNetworkStats] = useState({
     activePeers: 0,
