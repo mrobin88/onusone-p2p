@@ -10,6 +10,7 @@ import '@solana/wallet-adapter-react-ui/styles.css';
 import ClientOnly from '../components/ClientOnly';
 import { LocalAuthProvider } from '../components/LocalAuth';
 import Wallet from '../components/Wallet';
+import AutoWalletAuth from '../components/AutoWalletAuth';
 import '../styles/globals.css';
 
 const AppContent = ({ Component, pageProps }: AppProps) => {
@@ -31,6 +32,7 @@ const AppContent = ({ Component, pageProps }: AppProps) => {
       )}
       <Component {...pageProps} />
       <Wallet />
+      <AutoWalletAuth />
     </>
   );
 }

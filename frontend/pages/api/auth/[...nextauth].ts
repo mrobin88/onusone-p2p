@@ -27,6 +27,52 @@ export default NextAuth({
   },
   providers: [
     Credentials({
+      id: 'wallet',
+      name: 'Wallet',
+      credentials: {
+        walletAddress: { label: 'Wallet Address', type: 'text' }
+      },
+      authorize: async (credentials) => {
+        try {
+          const walletAddress = credentials?.walletAddress?.trim();
+          
+          if (!walletAddress) {
+            console.log('Missing wallet address');
+            return null;
+          }
+
+          // Look up user by wallet address
+          const userKey = `user:${walletAddress.toLowerCase()}`;
+          const user: any = await kv.hgetall(userKey);
+          
+          if (!user || Object.keys(user).length === 0) {
+            console.log('Wallet user not found:', walletAddress);
+            return null;
+          }
+
+          // Check if user is active
+          if (user.isActive === false) {
+            console.log('Wallet user account disabled:', walletAddress);
+            return null;
+          }
+
+          // Return user data for wallet auth
+          return {
+            id: user.id,
+            name: user.username,
+            email: user.email,
+            username: user.username,
+            walletAddress: user.walletAddress,
+            reputationScore: user.reputationScore || 0
+          } as any;
+
+        } catch (error) {
+          console.error('Wallet auth error:', error);
+          return null;
+        }
+      }
+    }),
+    Credentials({
       name: 'Credentials',
       credentials: {
         username: { label: 'Username', type: 'text' },
