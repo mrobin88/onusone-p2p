@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useLocalAuth } from '../components/LocalAuth';
+import { useWalletAuth } from '../components/WalletAuth';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import Button from '../components/Button';
 import PresenceBeacon from '../components/PresenceBeacon';
 import ReputationDisplay from '../components/ReputationDisplay';
@@ -21,10 +22,10 @@ const mockTokenManager = {
 
 export default function Home() {
   const router = useRouter();
-  const { user, isAuthenticated, logout, loading } = useLocalAuth();
+  const { user, isAuthenticated, logout, isConnecting } = useWalletAuth();
   
   // Debug info - remove this later
-  console.log('Auth Debug:', { isAuthenticated, user, loading });
+  console.log('🔑 Wallet Auth Debug:', { isAuthenticated, user, isConnecting });
   const [networkStats, setNetworkStats] = useState({
     connectedPeers: 0,
     userReputation: 100,
@@ -143,10 +144,10 @@ export default function Home() {
 
           {/* Action Buttons */}
           <div className="space-y-4 max-w-md mx-auto">
-            {loading ? (
+                          {isConnecting ? (
               <div className="text-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-400 mt-2">Checking authentication...</p>
+                <p className="text-gray-400 mt-2">Connecting wallet...</p>
               </div>
             ) : isAuthenticated ? (
               <>
@@ -180,12 +181,10 @@ export default function Home() {
               </>
             ) : (
               <>
-                <Button 
-                  onClick={() => router.push('/auth/login')}
-                  className="w-full"
-                >
-                  Login / Register
-                </Button>
+                                    <div className="text-center">
+                      <p className="text-gray-400 mb-4">Connect your Solana wallet to get started</p>
+                      <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700 !w-full" />
+                    </div>
                 <Button 
                   onClick={() => router.push('/boards')}
                   variant="secondary"

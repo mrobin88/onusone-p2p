@@ -367,13 +367,13 @@ export class P2PClient extends EventEmitter {
    */
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= P2P_CONFIG.MAX_RECONNECT_ATTEMPTS) {
-      console.error('Max reconnection attempts reached');
+      console.warn('P2P node not available (max reconnection attempts reached). App will work without P2P features.');
       this.emit('connection_failed');
       return;
     }
 
     this.reconnectAttempts++;
-    console.log(`Scheduling P2P reconnection attempt ${this.reconnectAttempts}/${P2P_CONFIG.MAX_RECONNECT_ATTEMPTS}`);
+    console.log(`P2P reconnection attempt ${this.reconnectAttempts}/${P2P_CONFIG.MAX_RECONNECT_ATTEMPTS} (checking for local node...)`);
     
     this.reconnectTimer = setTimeout(() => {
       if (this.userId) {

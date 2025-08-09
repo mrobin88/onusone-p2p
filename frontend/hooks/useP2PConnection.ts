@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getP2PClient, P2PClient, NetworkStatus, PeerInfo, P2PMessageType } from '../lib/p2p-client';
 
+// Import P2P config to check max attempts
+const P2P_CONFIG = {
+  MAX_RECONNECT_ATTEMPTS: 10,
+};
+
 interface P2PConnectionState {
   isConnected: boolean;
   isConnecting: boolean;
@@ -144,7 +149,8 @@ export function useP2PConnection(options: UseP2PConnectionOptions = {}) {
         ...prev,
         isConnected: false,
         isConnecting: false,
-        connectionError: 'Max reconnection attempts reached'
+        connectionError: 'P2P node not available (running in offline mode)',
+        reconnectAttempts: P2P_CONFIG.MAX_RECONNECT_ATTEMPTS // Stop further attempts
       }));
     };
 
@@ -190,12 +196,12 @@ export function useP2PConnection(options: UseP2PConnectionOptions = {}) {
     };
   }, [client]);
 
-  // Auto-connect when userId is available
+  // Auto-connect when userId is available (only if autoConnect is true)
   useEffect(() => {
-    if (autoConnect && userId && !state.isConnected && !state.isConnecting) {
+    if (autoConnect && userId && !state.isConnected && !state.isConnecting && state.reconnectAttempts === 0) {
       connect(userId);
     }
-  }, [autoConnect, userId, state.isConnected, state.isConnecting, connect]);
+  }, [autoConnect, userId, state.isConnected, state.isConnecting, state.reconnectAttempts, connect]);
 
   // Periodic network info refresh
   useEffect(() => {

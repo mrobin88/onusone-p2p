@@ -8,9 +8,8 @@ import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { useMemo } from 'react';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import ClientOnly from '../components/ClientOnly';
-import { LocalAuthProvider } from '../components/LocalAuth';
+import { WalletAuthProvider } from '../components/WalletAuth';
 import Wallet from '../components/Wallet';
-import AutoWalletAuth from '../components/AutoWalletAuth';
 import '../styles/globals.css';
 
 const AppContent = ({ Component, pageProps }: AppProps) => {
@@ -30,9 +29,8 @@ const AppContent = ({ Component, pageProps }: AppProps) => {
           </nav>
         </header>
       )}
-      <Component {...pageProps} />
-      <Wallet />
-      <AutoWalletAuth />
+                    <Component {...pageProps} />
+              <Wallet />
     </>
   );
 }
@@ -51,13 +49,13 @@ export default function App({ Component, pageProps }: AppProps) {
     <SessionProvider session={pageProps.session}>
       <ConnectionProvider endpoint={endpoint}>
         <WalletProvider wallets={wallets} autoConnect>
-          <WalletModalProvider>
-            <ClientOnly>
-              <LocalAuthProvider>
-                <AppContent Component={Component} pageProps={pageProps} />
-              </LocalAuthProvider>
-            </ClientOnly>
-          </WalletModalProvider>
+                            <WalletModalProvider>
+                    <ClientOnly>
+                      <WalletAuthProvider>
+                        <AppContent Component={Component} pageProps={pageProps} />
+                      </WalletAuthProvider>
+                    </ClientOnly>
+                  </WalletModalProvider>
         </WalletProvider>
       </ConnectionProvider>
     </SessionProvider>
