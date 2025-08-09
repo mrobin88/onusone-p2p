@@ -80,37 +80,51 @@ export default function BoardDetail() {
 
   const loadBoardMessages = async (boardSlug: string) => {
     try {
+      console.log('🔄 Loading messages for board:', boardSlug);
+      
       // Load from local cache first
       const cached = await loadMessages(boardSlug);
       if (cached && cached.length > 0) {
+        console.log('📋 Loaded', cached.length, 'cached messages');
         setMessages(cached as Message[]);
       }
 
-      // Load from API if available
-      const response = await fetch(`/api/posts?board=${boardSlug}`).catch(() => null);
-      if (response && response.ok) {
-        const posts = await response.json();
-        const formattedMessages: Message[] = posts.map((p: any) => ({
-          id: p.id,
-          content: p.content,
-          author: {
-            id: p.authorId || 'anon',
-            username: p.authorId || 'Anonymous',
-            reputation: 100 + Math.floor(Math.random() * 200)
-          },
-          boardSlug: p.boardType,
-          createdAt: p.createdAt,
-          decayScore: p.decayScore || 100,
-          replies: 0,
-          engagements: p.engagements || 0,
-          isVisible: true,
-          stakeTotal: p.stakeTotal || 0,
-          burnedTotal: p.burnedTotal || 0,
-        }));
+      // ALSO load from wallet profile posts for this board
+      const walletProfile = WalletAuthSystem.getCurrentProfile();
+      if (walletProfile && walletProfile.posts) {
+        const boardPosts = walletProfile.posts
+          .filter(post => post.boardSlug === boardSlug)
+          .map(post => ({
+            id: post.id,
+            content: post.content,
+            author: {
+              id: walletProfile.walletAddress,
+              username: walletProfile.displayName,
+              reputation: walletProfile.reputation
+            },
+            boardSlug: post.boardSlug,
+            createdAt: new Date(post.createdAt).toISOString(),
+            decayScore: 100,
+            replies: 0,
+            engagements: post.engagements || 0,
+            isVisible: true,
+            stakeTotal: post.stakeTotal || 0,
+            burnedTotal: 0,
+          }));
         
-        setMessages(formattedMessages);
-        await saveMessages(boardSlug, formattedMessages);
+        if (boardPosts.length > 0) {
+          console.log('👤 Found', boardPosts.length, 'posts from wallet profile');
+          // Merge with existing messages, remove duplicates
+          const existing = cached as Message[] || [];
+          const allMessages = [...boardPosts, ...existing];
+          const uniqueMessages = allMessages.filter((msg, index, arr) => 
+            arr.findIndex(m => m.id === msg.id) === index
+          );
+          setMessages(uniqueMessages);
+          console.log('📋 Total messages displayed:', uniqueMessages.length);
+        }
       }
+
     } catch (error) {
       console.error('Error loading messages:', error);
     }
