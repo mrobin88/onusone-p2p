@@ -147,7 +147,7 @@ export default function BoardDetail() {
       
       // Add to local state and cache
       const updatedMessages = [message, ...messages];
-      setMessages(updatedMessages);
+      setMessages(updatedMessages); console.log("🔄 UI updated with", updatedMessages.length, "messages");
       setNewMessage('');
       await appendMessage(board.slug, message);
       
@@ -167,7 +167,7 @@ export default function BoardDetail() {
       
     } catch (error) {
       console.error('Error posting message:', error);
-      // Post succeeded, no alert needed
+      alert('Failed to post message. Please try again.');
     } finally {
       setSubmitting(false);
     }
