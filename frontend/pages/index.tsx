@@ -21,7 +21,10 @@ const mockTokenManager = {
 
 export default function Home() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useLocalAuth();
+  const { user, isAuthenticated, logout, loading } = useLocalAuth();
+  
+  // Debug info - remove this later
+  console.log('Auth Debug:', { isAuthenticated, user, loading });
   const [networkStats, setNetworkStats] = useState({
     connectedPeers: 0,
     userReputation: 100,
@@ -140,7 +143,12 @@ export default function Home() {
 
           {/* Action Buttons */}
           <div className="space-y-4 max-w-md mx-auto">
-            {isAuthenticated ? (
+            {loading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-400 mt-2">Checking authentication...</p>
+              </div>
+            ) : isAuthenticated ? (
               <>
                 <Button 
                   onClick={() => router.push('/boards')}
