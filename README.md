@@ -1,263 +1,183 @@
-out# OnusOne P2P - Decentralized Discussion Network
+out# OnusOne P2P - Real Web3 Messaging Network
 
-A Web3 social platform where content survives based on community engagement. Use what you already have.
+**Pay-per-message network where content disappears automatically. No accounts, no tracking, just wallet → post → earn.**
 
+🏷️ **Token**: ONU (Solana SPL)  
+🌐 **Live**: https://onusone-p2p.vercel.app  
+💰 **Model**: Pay small ONU fee → Post message → Content auto-expires → Nodes earn rewards
 
-coin name : ONU
-##  Quick Start
+## 🚀 **What Actually Works**
 
-### Prerequisites
-- Node.js 18+ 
-- npm 9+
-- Git
+### ✅ **Live Features**
+- **Wallet Authentication** (Phantom/Solflare)
+- **Real Token Staking** (Solana SPL tokens)
+- **Content Decay System** (messages auto-expire)
+- **Node Reward Network** (hosts get paid)
+- **Emergency Economics** (sustainable token supply)
 
-### Local Development
+### ⚡ **Quick Test**
 ```bash
-# Clone the repository
+1. Visit: https://onusone-p2p.vercel.app
+2. Connect Solana wallet  
+3. Post message (costs ~5-10 ONU)
+4. Watch content decay based on engagement
+5. Nodes earn ONU for hosting your message
+```
+
+## 💰 **Real Economics (No BS)**
+
+### **User Flow**
+1. **Connect Wallet** → No signup required
+2. **Pay ONU Fee** → ~$0.50 per message  
+3. **Message Goes Live** → Distributed to nodes
+4. **Content Expires** → Based on stakes/engagement
+5. **Nodes Get Paid** → 80% of fees go to hosts
+
+### **Current Limits (Emergency Economics)**
+- **Max Stake Per Post**: 50 ONU (was unlimited)
+- **Daily User Limit**: 200 ONU (prevents whales)  
+- **Total User Stakes**: 2,000 ONU max
+- **Transaction Fees**: 10 ONU (burns tokens)
+- **No Free Tokens**: All ONU must be earned
+
+## 🏗️ **Real Tech Stack**
+
+### **What's Actually Running**
+- **Frontend**: Next.js on Vercel
+- **Auth**: Solana wallet connection + NextAuth fallback  
+- **Storage**: Mock KV (production would use Vercel KV)
+- **Blockchain**: Solana mainnet for real token operations
+- **P2P**: Node.js backends with real message relay
+
+### **What's NOT Running (Yet)**
+- ❌ PostgreSQL/Redis (using mock storage)
+- ❌ IPFS (direct Solana transactions instead)  
+- ❌ libp2p (custom P2P implementation)
+- ❌ Kubernetes (deployed on Vercel)
+
+## 🚨 **The Truth About Current Features**
+
+### **✅ What Actually Works**
+- **Wallet Connect**: Real Solana wallet integration
+- **Token Staking**: Actual SPL token transfers 
+- **Message Posting**: With decay scoring system
+- **Node Rewards**: P2P backends get paid for hosting
+- **Content Expiry**: Messages disappear based on engagement
+- **Emergency Economics**: Sustainable tokenomics (prevents depletion)
+
+### **🚧 What's Simulated/Mock**
+- **User Storage**: Uses mock storage (resets on deploy)
+- **Message Persistence**: Mock storage, not permanent IPFS
+- **P2P Discovery**: Simplified node connection model
+- **Token Distribution**: Limited circulating supply for testing
+
+### **🔧 Local Development (If You Want to Contribute)**
+```bash
+# Clone and install
 git clone https://github.com/mrobin88/onusone-p2p.git
 cd onusone-p2p
+npm install
 
-# Install all dependencies
-npm run install:all
-
-# Start the application
+# Start development
 npm run dev
+# Frontend: localhost:3000
+# P2P Node: localhost:8888
 ```
 
-**Access the application:**
-- Frontend: http://localhost:3000
-- Node API: http://localhost:8888
-- Health Check: http://localhost:8888/health
-
-### Docker Development
+### **Environment Setup**
 ```bash
-# Start all services
-docker-compose up -d
+# Required for auth (create frontend/.env.local):
+NEXTAUTH_SECRET="your-secret-here"
+NEXTAUTH_URL="http://localhost:3000"
 
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
+# Optional Solana config:
+NEXT_PUBLIC_TOKEN_MINT="your-token-mint"
+NEXT_PUBLIC_TREASURY_ADDRESS="your-treasury"
 ```
 
-## 🏗️ Architecture
+## 🎯 **Current Roadmap (Realistic)**
 
-### Components
-- **Frontend**: React/Next.js application
-- **Node**: P2P backend with HTTP API
-- **Shared**: TypeScript library with common types and utilities
-- **Monitoring**: Prometheus + Grafana for metrics
+### **Phase 1: Core Economics ✅ DONE**
+- [x] Real Solana wallet integration
+- [x] Actual token staking with SPL transfers
+- [x] Content decay algorithm working
+- [x] Sustainable tokenomics (emergency fixes)
+- [x] Basic P2P node network
 
-### Tech Stack
-- **Frontend**: React, Next.js, TypeScript, Tailwind CSS
-- **Backend**: Node.js, Express, TypeScript
-- **P2P**: libp2p, IPFS integration
-- **Database**: PostgreSQL, Redis
-- **Infrastructure**: Docker, Kubernetes ready
+### **Phase 2: Real P2P Infrastructure 🚧 NEXT**
+- [ ] Replace mock storage with distributed node storage
+- [ ] IPFS content addressing for messages
+- [ ] True peer discovery and routing
+- [ ] Node operator staking and slashing
+- [ ] Message relay incentives
 
-## 🔧 Development
+### **Phase 3: Scale Economics 📋 FUTURE**
+- [ ] Dynamic pricing based on network load
+- [ ] Content markets (boost/promote messages)
+- [ ] Node operator rewards scaling
+- [ ] Cross-chain token bridges
+- [ ] Mobile app for mainstream adoption
 
-### Project Structure
-```
-onusone-p2p/
-├── frontend/          # React/Next.js frontend
-├── node/             # P2P backend server
-├── shared/           # Shared TypeScript library
-├── .github/          # GitHub Actions workflows
-├── docker-compose.yml # Local development
-└── README.md
-```
+## 🚨 **What We're NOT Building**
+- ❌ Traditional social media features
+- ❌ User profiles and permanent accounts  
+- ❌ Advertising or data harvesting
+- ❌ Free tiers or freemium models
+- ❌ Complex governance tokens
 
-### Available Scripts
-```bash
-# Install all dependencies
-npm run install:all
+## ⚠️ **Risks & Limitations**
 
-# Start development servers
-npm run dev
+### **🚨 Current Risks**
+- **Mock Storage**: Data resets on server restarts
+- **Limited Testing**: Emergency economics need more validation  
+- **Centralized Frontend**: Vercel hosts the UI (not decentralized)
+- **Token Distribution**: Small circulating supply for testing
+- **No Mobile App**: Desktop/web browser only
 
-# Build all components
-npm run build:all
+### **🛡️ Security Measures Actually Implemented**
+- **Real Solana Verification**: All stakes verified on-chain
+- **Rate Limiting**: Prevents spam and abuse
+- **Input Sanitization**: XSS/injection protection
+- **Emergency Economics**: Prevents token depletion
+- **No Private Keys**: User wallets stay in user control
 
-# Run tests
-npm run test:all
+### **💰 Financial Disclaimers**
+- **Early Stage**: This is experimental Web3 infrastructure
+- **Token Risk**: ONU tokens may lose value
+- **Network Risk**: P2P network may have downtime
+- **Testing Phase**: Use small amounts only
+- **No Guarantees**: Content may be lost during development
 
-# Lint code
-npm run lint:all
-```
+## 📞 **Support & Contact**
 
-### Individual Component Scripts
-```bash
-# Frontend
-cd frontend
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run test         # Run tests
+### **🐛 Issues**
+- Found a bug? [Open GitHub Issue](https://github.com/mrobin88/onusone-p2p/issues)
+- Feature request? [GitHub Discussions](https://github.com/mrobin88/onusone-p2p/discussions)
 
-# Node
-cd node
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run test         # Run tests
+### **💬 Community**
+- **Testing**: Help test the live platform
+- **Feedback**: Share your experience with the economic model
+- **Development**: Contribute to real P2P infrastructure
 
-# Shared
-cd shared
-npm run build        # Build library
-npm run test         # Run tests
-```
+### **⚠️ Current Status: EXPERIMENTAL**
 
-## 🚀 CI/CD Pipeline
+This is a **working prototype** of a sustainable Web3 messaging network. The core economics are functional, but we're still building toward true decentralization.
 
-### GitHub Actions Workflows
-
-#### 1. **CI Pipeline** (`.github/workflows/ci.yml`)
-- **Triggers**: Push to main/develop, Pull Requests
-- **Jobs**:
-  - Build & test shared library
-  - Build & test node backend
-  - Build & test frontend
-  - Integration tests
-  - Security audit
-  - Code quality checks
-
-#### 2. **Deploy Pipeline** (`.github/workflows/deploy.yml`)
-- **Triggers**: Push to main, Manual deployment
-- **Environments**: Staging, Production
-- **Features**:
-  - Automated builds
-  - Docker image creation
-  - Kubernetes deployment
-  - Health checks
-
-#### 3. **Release Pipeline** (`.github/workflows/release.yml`)
-- **Triggers**: Git tags (v*)
-- **Features**:
-  - Automated releases
-  - Changelog generation
-  - Asset uploads
-  - Team notifications
-
-### Deployment Options
-
-#### Docker Deployment
-```bash
-# Build images
-docker build -t onusone/node ./node
-docker build -t onusone/frontend ./frontend
-
-# Run with docker-compose
-docker-compose up -d
-```
-
-#### Kubernetes Deployment
-```bash
-# Apply Kubernetes manifests
-kubectl apply -f k8s/
-
-# Check deployment status
-kubectl get pods -n onusone
-```
-
-## 🔐 Security
-
-### Security Features
-- **Dependency scanning**: Automated npm audit
-- **Code quality**: ESLint, TypeScript strict mode
-- **Container security**: Non-root users, minimal base images
-- **Network security**: CORS configuration, rate limiting
-
-### Environment Variables
-```bash
-# Node Environment
-NODE_ENV=production
-HTTP_PORT=8888
-DATABASE_URL=postgresql://user:pass@localhost:5432/onusone
-REDIS_URL=redis://localhost:6379
-
-# Frontend Environment
-NEXT_PUBLIC_API_URL=http://localhost:8888
-NEXT_PUBLIC_NETWORK_ID=1
-```
-
-## 📊 Monitoring
-
-### Metrics & Health Checks
-- **Health Endpoint**: `GET /health`
-- **Node Info**: `GET /api/node`
-- **Metrics**: Prometheus endpoints
-- **Logging**: Structured JSON logs
-
-### Monitoring Stack
-- **Prometheus**: Metrics collection
-- **Grafana**: Dashboards (http://localhost:3001)
-- **Health Checks**: Automated service monitoring
-
-## 🤝 Contributing
-
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes
-4. Run tests: `npm run test:all`
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
-
-### Code Standards
-- **TypeScript**: Strict mode enabled
-- **ESLint**: Code linting and formatting
-- **Prettier**: Code formatting
-- **Tests**: Unit and integration tests required
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-### Getting Help
-- **Issues**: [GitHub Issues](https://github.com/mrobin88/onusone-p2p/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/mrobin88/onusone-p2p/discussions)
-- **Documentation**: [Wiki](https://github.com/mrobin88/onusone-p2p/wiki)
-
-### Troubleshooting
-
-#### Common Issues
-1. **Port conflicts**: Change ports in docker-compose.yml
-2. **Build failures**: Clear node_modules and reinstall
-3. **Database connection**: Check PostgreSQL is running
-4. **P2P issues**: Check network connectivity
-
-#### Debug Mode
-```bash
-# Enable debug logging
-DEBUG=* npm run dev
-
-# View detailed logs
-docker-compose logs -f node
-```
-
-## 🎯 Roadmap
-
-### Phase 1: Core Features ✅
-- [x] Basic P2P messaging
-- [x] Content decay algorithm
-- [x] Web3 integration ready
-- [x] Modern React frontend
-
-### Phase 2: Advanced Features 🚧
-- [ ] Real-time P2P networking
-- [ ] IPFS content storage
-- [ ] Advanced decay algorithms
-- [ ] Mobile app
-
-### Phase 3: Scale & Performance 📋
-- [ ] Horizontal scaling
-- [ ] Performance optimization
-- [ ] Advanced monitoring
-- [ ] Enterprise features
+**What works**: Wallet auth, token staking, content decay, node rewards  
+**What's next**: Replace mock storage with distributed node network
 
 ---
 
-**OnusOne P2P** - Take back control. Use what you already have.
+## 🔥 **The Vision**
+
+**Stop building centralized platforms with Web3 marketing.** 
+
+Build **real decentralized infrastructure** where:
+- Users pay for network usage (not ads)
+- Content expires naturally (no permanent data hoarding)  
+- Node operators earn real rewards (not empty governance tokens)
+- Network scales through economics (not venture capital)
+
+**OnusOne P2P** - Pay per message. Content disappears. Nodes get paid. That's it.
+
+**Ready to test it?** → https://onusone-p2p.vercel.app 🚀
