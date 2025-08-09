@@ -24,8 +24,13 @@ import { WalletAdapter } from '@solana/wallet-adapter-base';
 
 // REAL Solana configuration
 const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
-const ONU_TOKEN_MINT = new PublicKey(process.env.NEXT_PUBLIC_TOKEN_MINT || 'YOUR_ACTUAL_TOKEN_MINT');
-const TREASURY_WALLET = new PublicKey(process.env.NEXT_PUBLIC_TREASURY_ADDRESS || 'YOUR_TREASURY_WALLET');
+
+// Use valid placeholder public keys for build time (these would be replaced with real ones in production)
+const DEFAULT_TOKEN_MINT = '11111111111111111111111111111112'; // Valid placeholder
+const DEFAULT_TREASURY = '11111111111111111111111111111112'; // Valid placeholder
+
+const ONU_TOKEN_MINT = new PublicKey(process.env.NEXT_PUBLIC_TOKEN_MINT || DEFAULT_TOKEN_MINT);
+const TREASURY_WALLET = new PublicKey(process.env.NEXT_PUBLIC_TREASURY_ADDRESS || DEFAULT_TREASURY);
 
 export interface WalletBalance {
   sol: number;
