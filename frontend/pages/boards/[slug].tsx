@@ -9,6 +9,7 @@ import { useRouter } from 'next/router';
 import { useWalletAuth } from '../../components/WalletAuth';
 import ScribeLayout from '../../components/ScribeLayout';
 import ScribeMessage from '../../components/ScribeMessage';
+import TokenStaking from '../../components/TokenStaking';
 import { useP2PConnection } from '../../hooks/useP2PConnection';
 import { loadMessages, saveMessages, appendMessage } from '../../lib/cache';
 
@@ -51,6 +52,7 @@ export default function BoardDetail() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [stakingMessageId, setStakingMessageId] = useState<string | null>(null);
 
   // P2P networking (disabled to prevent spam)
   const {
@@ -193,8 +195,27 @@ export default function BoardDetail() {
   };
 
   const handleStake = async (messageId: string) => {
-    // Implement staking logic
-    console.log(`Stake on message ${messageId}`);
+    console.log(`Opening stake modal for message ${messageId}`);
+    setStakingMessageId(messageId);
+  };
+
+  const handleStakeSuccess = (txSig: string, amount: number) => {
+    console.log(`✅ Stake successful! TX: ${txSig}, Amount: ${amount}`);
+    
+    // Update the staked message's stake total
+    setMessages(prev => prev.map(msg => 
+      msg.id === stakingMessageId 
+        ? { ...msg, stakeTotal: (msg.stakeTotal || 0) + amount }
+        : msg
+    ));
+    
+    // Close staking modal
+    setStakingMessageId(null);
+  };
+
+  const handleStakeError = (error: string) => {
+    console.error(`❌ Stake failed: ${error}`);
+    // Keep modal open to show error - user can try again or close manually
   };
 
   const handleReply = async (messageId: string) => {
@@ -312,6 +333,18 @@ export default function BoardDetail() {
           </div>
         )}
       </div>
+      
+      {/* Staking Modal */}
+      {stakingMessageId && (
+        <TokenStaking
+          postId={stakingMessageId}
+          currentStake={messages.find(m => m.id === stakingMessageId)?.stakeTotal || 0}
+          onStakeSuccess={handleStakeSuccess}
+          onStakeError={handleStakeError}
+          isOpen={true}
+          onClose={() => setStakingMessageId(null)}
+        />
+      )}
     </ScribeLayout>
   );
 }

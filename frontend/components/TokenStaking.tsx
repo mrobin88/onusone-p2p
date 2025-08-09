@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
-import { getSolanaTransactionManager, SolanaTransactionResult } from '../lib/solana-transactions';
+import { realSolanaPayments, RealPayment } from '../lib/real-solana-payments';
 import Button from './Button';
 
 interface TokenStakingProps {
@@ -12,6 +12,8 @@ interface TokenStakingProps {
   onStakeError?: (error: string) => void;
   disabled?: boolean;
   className?: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 interface StakeStep {
@@ -28,46 +30,42 @@ export default function TokenStaking({
   onStakeSuccess,
   onStakeError,
   disabled = false,
-  className = ''
+  className = '',
+  isOpen: externalIsOpen,
+  onClose
 }: TokenStakingProps) {
   const { publicKey, connected, wallet } = useWallet();
   const { setVisible } = useWalletModal();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  
+  // Use external isOpen if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen = onClose ? onClose : setInternalIsOpen;
   const [stakeAmount, setStakeAmount] = useState(100);
   const [isStaking, setIsStaking] = useState(false);
-  const [tokenBalance, setTokenBalance] = useState<number | null>(null);
-  const [solBalance, setSolBalance] = useState<number | null>(null);
+  const [walletBalance, setWalletBalance] = useState<{ sol: number; onu: number } | null>(null);
   const [estimatedFee, setEstimatedFee] = useState(0.001);
   const [stakeSteps, setStakeSteps] = useState<StakeStep[]>([]);
-
-  const solanaManager = getSolanaTransactionManager();
 
   // Fetch balances when wallet connects
   useEffect(() => {
     const fetchBalances = async () => {
       if (!publicKey || !connected) {
-        setTokenBalance(null);
-        setSolBalance(null);
+        setWalletBalance(null);
         return;
       }
 
       try {
-        const [onuBalance, solBal] = await Promise.all([
-          solanaManager.getTokenBalance(publicKey),
-          solanaManager.getSolBalance(publicKey)
-        ]);
-
-        setTokenBalance(onuBalance);
-        setSolBalance(solBal);
+        const balance = await realSolanaPayments.getWalletBalance(publicKey.toString());
+        setWalletBalance({ sol: balance.sol, onu: balance.onu });
       } catch (error) {
         console.error('Failed to fetch balances:', error);
-        setTokenBalance(0);
-        setSolBalance(0);
+        setWalletBalance({ sol: 0, onu: 0 });
       }
     };
 
     fetchBalances();
-  }, [publicKey, connected, solanaManager]);
+  }, [publicKey, connected]);
 
   // Initialize stake steps
   const initializeStakeSteps = (): StakeStep[] => [
@@ -132,13 +130,13 @@ export default function TokenStaking({
       // Step 1: Validation
       updateStepStatus('validation', 'active');
       
-      if (tokenBalance === null || tokenBalance < stakeAmount) {
-        updateStepStatus('validation', 'error', `Insufficient balance. Need ${stakeAmount} ONU, have ${tokenBalance || 0}`);
+      if (!walletBalance || walletBalance.onu < stakeAmount) {
+        updateStepStatus('validation', 'error', `Insufficient balance. Need ${stakeAmount} ONU, have ${walletBalance?.onu || 0}`);
         throw new Error('Insufficient token balance');
       }
 
-      if (solBalance === null || solBalance < estimatedFee) {
-        updateStepStatus('validation', 'error', `Insufficient SOL for fees. Need ${estimatedFee} SOL, have ${solBalance || 0}`);
+      if (!walletBalance || walletBalance.sol < estimatedFee) {
+        updateStepStatus('validation', 'error', `Insufficient SOL for fees. Need ${estimatedFee} SOL, have ${walletBalance?.sol || 0}`);
         throw new Error('Insufficient SOL for transaction fees');
       }
 
@@ -146,25 +144,9 @@ export default function TokenStaking({
 
       // Step 2: Create Transaction
       updateStepStatus('creation', 'active');
-
-      const stakeParams = {
-        amount: stakeAmount,
-        postId,
-        type: 'post' as const
-      };
-
-      // Validate parameters
-      const validation = solanaManager.validateStakeParams(stakeParams);
-      if (!validation.isValid) {
-        updateStepStatus('creation', 'error', validation.error);
-        throw new Error(validation.error);
-      }
-
-      const { transaction } = await solanaManager.createStakeTransaction(
-        stakeParams,
-        { publicKey, connected, wallet, signTransaction: wallet.adapter.signTransaction }
-      );
-
+      
+      // For staking, we're essentially sending tokens to treasury as a stake
+      // This is a real Solana transaction
       updateStepStatus('creation', 'completed');
 
       // Step 3: Sign Transaction
@@ -174,20 +156,12 @@ export default function TokenStaking({
       updateStepStatus('signing', 'completed');
       updateStepStatus('broadcasting', 'active');
 
-      // Step 5: Confirmation
+      // Step 5: Confirmation - Execute the real Solana transaction
       updateStepStatus('broadcasting', 'completed');
       updateStepStatus('confirmation', 'active');
 
-      // Execute the transaction
-      const result = await solanaManager.executeStakeTransaction(
-        stakeParams,
-        { publicKey, connected, wallet, signTransaction: wallet.adapter.signTransaction }
-      );
-
-      if (!result.success) {
-        updateStepStatus('confirmation', 'error', result.error);
-        throw new Error(result.error || 'Transaction failed');
-      }
+      // Use real Solana payments to stake tokens
+      const payment: RealPayment = await realSolanaPayments.stakeForNode(wallet.adapter, stakeAmount);
 
       updateStepStatus('confirmation', 'completed');
 
@@ -204,7 +178,7 @@ export default function TokenStaking({
           postId,
           amount: stakeAmount,
           type: 'post',
-          txSig: result.txSig
+          txSig: payment.signature
         })
       });
 
@@ -217,20 +191,27 @@ export default function TokenStaking({
       updateStepStatus('verification', 'completed');
 
       // Success!
-      console.log('✅ Stake transaction completed successfully:', result.txSig);
+      console.log('✅ Stake transaction completed successfully:', payment.signature);
       
       if (onStakeSuccess) {
-        onStakeSuccess(result.txSig!, stakeAmount);
+        onStakeSuccess(payment.signature, stakeAmount);
       }
 
       // Update local balance
-      if (tokenBalance !== null) {
-        setTokenBalance(tokenBalance - stakeAmount);
+      if (walletBalance) {
+        setWalletBalance({
+          sol: walletBalance.sol,
+          onu: walletBalance.onu - stakeAmount
+        });
       }
 
       // Close modal after brief delay
       setTimeout(() => {
-        setIsOpen(false);
+        if (onClose) {
+          onClose();
+        } else {
+          setInternalIsOpen(false);
+        }
         setStakeSteps([]);
       }, 2000);
 
@@ -249,8 +230,8 @@ export default function TokenStaking({
     }
   };
 
-  const canStake = connected && tokenBalance !== null && tokenBalance >= stakeAmount && 
-                   solBalance !== null && solBalance >= estimatedFee;
+  const canStake = connected && walletBalance !== null && walletBalance.onu >= stakeAmount && 
+                   walletBalance.sol >= estimatedFee;
 
   const getStepIcon = (status: StakeStep['status']) => {
     switch (status) {
@@ -263,16 +244,18 @@ export default function TokenStaking({
 
   return (
     <>
-      {/* Stake Button */}
-      <Button
-        onClick={() => setIsOpen(true)}
-        disabled={disabled || isStaking}
-        size="sm"
-        variant="primary"
-        className={className}
-      >
-        {isStaking ? 'Staking...' : '💰 Stake Tokens'}
-      </Button>
+      {/* Stake Button - only show if no external control */}
+      {externalIsOpen === undefined && (
+        <Button
+          onClick={() => setInternalIsOpen(true)}
+          disabled={disabled || isStaking}
+          size="sm"
+          variant="primary"
+          className={className}
+        >
+          {isStaking ? 'Staking...' : '💰 Stake Tokens'}
+        </Button>
+      )}
 
       {/* Stake Modal */}
       {isOpen && (
@@ -282,7 +265,13 @@ export default function TokenStaking({
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold text-white">Stake ONU Tokens</h3>
                 <button
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    if (onClose) {
+                      onClose();
+                    } else {
+                      setInternalIsOpen(false);
+                    }
+                  }}
                   disabled={isStaking}
                   className="text-gray-400 hover:text-white"
                 >
@@ -344,7 +333,7 @@ export default function TokenStaking({
                           value={stakeAmount}
                           onChange={(e) => setStakeAmount(Math.max(1, parseInt(e.target.value) || 1))}
                           min="1"
-                          max={tokenBalance || 1000000}
+                          max={walletBalance?.onu || 1000000}
                           className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
@@ -370,13 +359,13 @@ export default function TokenStaking({
                       <div className="flex justify-between">
                         <span className="text-gray-400">ONU Balance:</span>
                         <span className="text-white">
-                          {tokenBalance !== null ? `${tokenBalance.toFixed(2)}` : 'Loading...'}
+                          {walletBalance !== null ? `${walletBalance.onu.toFixed(2)}` : 'Loading...'}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">SOL Balance:</span>
                         <span className="text-white">
-                          {solBalance !== null ? `${solBalance.toFixed(4)}` : 'Loading...'}
+                          {walletBalance !== null ? `${walletBalance.sol.toFixed(4)}` : 'Loading...'}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -393,11 +382,11 @@ export default function TokenStaking({
                   {/* Validation Messages */}
                   {!canStake && connected && (
                     <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded text-red-200 text-sm">
-                      {tokenBalance !== null && tokenBalance < stakeAmount && (
-                        <div>Insufficient ONU tokens. Need {stakeAmount}, have {tokenBalance.toFixed(2)}</div>
+                      {walletBalance !== null && walletBalance.onu < stakeAmount && (
+                        <div>Insufficient ONU tokens. Need {stakeAmount}, have {walletBalance.onu.toFixed(2)}</div>
                       )}
-                      {solBalance !== null && solBalance < estimatedFee && (
-                        <div>Insufficient SOL for transaction fees. Need {estimatedFee}, have {solBalance.toFixed(4)}</div>
+                      {walletBalance !== null && walletBalance.sol < estimatedFee && (
+                        <div>Insufficient SOL for transaction fees. Need {estimatedFee}, have {walletBalance.sol.toFixed(4)}</div>
                       )}
                     </div>
                   )}
@@ -405,7 +394,13 @@ export default function TokenStaking({
                   {/* Action Buttons */}
                   <div className="flex space-x-3">
                     <Button
-                      onClick={() => setIsOpen(false)}
+                      onClick={() => {
+                        if (onClose) {
+                          onClose();
+                        } else {
+                          setInternalIsOpen(false);
+                        }
+                      }}
                       variant="secondary"
                       className="flex-1"
                       disabled={isStaking}

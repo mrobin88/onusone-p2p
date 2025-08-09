@@ -6,65 +6,19 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import Button from '../components/Button';
 import PresenceBeacon from '../components/PresenceBeacon';
 import ReputationDisplay from '../components/ReputationDisplay';
-
-// Mock P2P and token systems for demo
-const mockP2PNetwork = {
-  connectedPeers: 12,
-  networkHealth: 94,
-  messagesProcessed: 1337
-};
-
-const mockTokenManager = {
-  totalSupply: 1000000,
-  burnedTokens: 50000,
-  activeStakes: 15000
-};
+import QuickNodeButton from '../components/QuickNodeButton';
+import { useRealP2PStatus } from '../hooks/useRealP2PStatus';
 
 export default function Home() {
   const router = useRouter();
   const { user, isAuthenticated, logout, isConnecting } = useWalletAuth();
+  const realP2PStatus = useRealP2PStatus();
   
   // Debug info - remove this later
   console.log('🔑 Wallet Auth Debug:', { isAuthenticated, user, isConnecting });
-  const [networkStats, setNetworkStats] = useState({
-    connectedPeers: 0,
-    userReputation: 100,
-    networkHealth: 'Connecting...',
-    totalMessages: 0,
-    activeDecay: 0
-  });
-
-  // Simulate P2P network stats
-  useEffect(() => {
-    const fetchNetworkStats = async () => {
-      try {
-        const [presenceRes, boardsRes] = await Promise.all([
-          fetch('/api/presence-count'),
-          fetch('/api/admin/boards').catch(() => null),
-        ]);
-        const presence = await presenceRes.json().catch(() => ({ active: 0 }));
-        const boards = boardsRes ? await boardsRes.json().catch(() => []) : [];
-        const totalMsgs = Array.isArray(boards) ? boards.reduce((s: number, b: any) => s + (b.count || 0), 0) : 0;
-
-        setNetworkStats({
-          connectedPeers: presence.active || 0,
-          userReputation: isAuthenticated ? 100 + Math.floor(Math.random() * 150) : 0,
-          networkHealth: presence.active > 0 ? 'Excellent' : 'Connecting...',
-          totalMessages: totalMsgs,
-          activeDecay: Math.min(100, Math.max(0, Math.round((presence.active ? 18 : 10))))
-        });
-      } catch (error) {
-        setNetworkStats((prev) => ({ ...prev, networkHealth: 'Connecting...' }));
-      }
-    };
-
-    fetchNetworkStats();
-    const interval = setInterval(fetchNetworkStats, 3000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
 
   const handleViewAPI = () => {
-    window.open('http://localhost:8888/health', '_blank');
+    router.push('/api-status');
   };
 
   const handleLogout = () => {
@@ -81,6 +35,20 @@ export default function Home() {
       </Head>
 
       <PresenceBeacon />
+      
+      {/* Header with QuickNodeButton */}
+      {isAuthenticated && (
+        <header className="bg-gray-900 border-b border-gray-700 p-4">
+          <div className="container mx-auto flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-xl font-bold">OnusOne</h1>
+              <span className="text-sm text-gray-400">P2P Network</span>
+            </div>
+            <QuickNodeButton />
+          </div>
+        </header>
+      )}
+
       <main className="container mx-auto px-4 py-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-4">
@@ -90,31 +58,57 @@ export default function Home() {
             Take Back Control - Decentralized Social Network
           </p>
 
-          {/* P2P Network Status */}
+          {/* Real P2P Network Status */}
           <div className="bg-gray-900 p-6 rounded-lg shadow-lg mb-8 max-w-2xl mx-auto">
             <h2 className="text-2xl font-semibold mb-4 text-blue-400">P2P Network Status</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
               <div>
                 <span className="text-gray-400">Connected Peers:</span>
-                <span className="text-green-400 ml-2 font-bold">{networkStats.connectedPeers}</span>
+                <span className={`ml-2 font-bold ${realP2PStatus.isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                  {realP2PStatus.connectedPeers}
+                </span>
+                {!realP2PStatus.isConnected && (
+                  <span className="text-xs text-gray-500 ml-2">(node offline)</span>
+                )}
               </div>
               <div>
                 <span className="text-gray-400">Network Health:</span>
-                <span className="text-green-400 ml-2 font-bold">{networkStats.networkHealth}</span>
+                <span className={`ml-2 font-bold ${
+                  realP2PStatus.networkHealth === 'excellent' ? 'text-green-400' : 
+                  realP2PStatus.networkHealth === 'good' ? 'text-yellow-400' : 'text-red-400'
+                }`}>
+                  {realP2PStatus.networkHealth === 'offline' ? 'Offline' : 
+                   realP2PStatus.networkHealth.charAt(0).toUpperCase() + realP2PStatus.networkHealth.slice(1)}
+                </span>
               </div>
               <div>
-                <span className="text-gray-400">Total Messages:</span>
-                <span className="text-yellow-400 ml-2 font-bold">{networkStats.totalMessages}</span>
+                <span className="text-gray-400">Node Uptime:</span>
+                <span className="text-yellow-400 ml-2 font-bold">
+                  {realP2PStatus.uptime > 0 ? `${Math.floor(realP2PStatus.uptime / 60)}m` : '0m'}
+                </span>
               </div>
               <div>
-                <span className="text-gray-400">Active Decay:</span>
-                <span className="text-red-400 ml-2 font-bold">{networkStats.activeDecay}%</span>
+                <span className="text-gray-400">Messages Cached:</span>
+                <span className="text-blue-400 ml-2 font-bold">{realP2PStatus.messagesTotal}</span>
               </div>
               {isAuthenticated && user && (
                 <div className="md:col-span-2">
                   <span className="text-gray-400">Your Reputation:</span>
-                  <ReputationDisplay userId={user.id} compact={true} className="ml-2" />
+                  <ReputationDisplay userId={user.walletAddress} compact={true} className="ml-2" />
                 </div>
+              )}
+            </div>
+            
+            {/* Real status explanation */}
+            <div className="mt-4 p-3 bg-gray-800 rounded text-sm">
+              {realP2PStatus.isConnected ? (
+                <p className="text-green-300">
+                  ✅ Your local P2P node is running and connected to the network!
+                </p>
+              ) : (
+                <p className="text-yellow-300">
+                  ⏸️ P2P node is offline. Use the "Start Node & Earn" button above to join the network.
+                </p>
               )}
             </div>
           </div>
@@ -124,10 +118,10 @@ export default function Home() {
             {isAuthenticated ? (
               <div className="bg-green-900 p-4 rounded-lg mb-4">
                 <p className="text-green-300">
-                  Welcome back, <strong>{user?.username}</strong>!
+                  Welcome back, <strong>{user?.displayName}</strong>!
                 </p>
                 <p className="text-sm text-green-400 mt-1">
-                  You are connected to the P2P network
+                  Wallet connected: {user?.walletAddress.slice(0, 8)}...{user?.walletAddress.slice(-4)}
                 </p>
               </div>
             ) : (
@@ -136,7 +130,7 @@ export default function Home() {
                   Join the decentralized network
                 </p>
                 <p className="text-sm text-blue-400 mt-1">
-                  Login to participate in discussions
+                  Connect your Solana wallet to start earning
                 </p>
               </div>
             )}
@@ -144,7 +138,7 @@ export default function Home() {
 
           {/* Action Buttons */}
           <div className="space-y-4 max-w-md mx-auto">
-                          {isConnecting ? (
+            {isConnecting ? (
               <div className="text-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 <p className="text-gray-400 mt-2">Connecting wallet...</p>
@@ -155,49 +149,56 @@ export default function Home() {
                   onClick={() => router.push('/boards')}
                   className="w-full"
                 >
-                  Browse Boards
+                  📋 Browse Boards
                 </Button>
                 <Button 
-                  onClick={() => router.push('/topics')}
+                  onClick={() => router.push('/buy-onu')}
                   variant="secondary"
                   className="w-full"
                 >
-                  View Topics
+                  💳 Buy ONU Tokens
+                </Button>
+                <Button 
+                  onClick={() => router.push('/become-node')}
+                  variant="secondary"
+                  className="w-full"
+                >
+                  💰 Become Node (Full Setup)
                 </Button>
                 <Button 
                   onClick={handleViewAPI}
                   variant="secondary"
                   className="w-full"
                 >
-                  View P2P API
+                  🔌 View API Status
                 </Button>
                 <Button 
                   onClick={handleLogout}
                   variant="danger"
                   className="w-full"
                 >
-                  Logout
+                  🚪 Logout
                 </Button>
               </>
             ) : (
               <>
-                                    <div className="text-center">
-                      <p className="text-gray-400 mb-4">Connect your Solana wallet to get started</p>
-                      <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700 !w-full" />
-                    </div>
+                <div className="text-center">
+                  <p className="text-gray-400 mb-4">Connect your Solana wallet to get started</p>
+                  <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700 !w-full" />
+                </div>
                 <Button 
                   onClick={() => router.push('/boards')}
                   variant="secondary"
                   className="w-full"
                 >
-                  Browse as Guest
+                  👀 Browse as Guest
                 </Button>
                 <Button 
                   onClick={handleViewAPI}
                   variant="secondary"
                   className="w-full"
                 >
-                  View P2P API
+                  🔌 View API Status
                 </Button>
               </>
             )}
@@ -208,19 +209,19 @@ export default function Home() {
             <div className="bg-gray-900 p-6 rounded-lg">
               <h3 className="text-lg font-semibold mb-2 text-blue-400">Decentralized</h3>
               <p className="text-gray-300 text-sm">
-                No central servers. Your data stays with you.
+                No central servers. Your data stays with you. Run a node and earn ONU tokens.
               </p>
             </div>
             <div className="bg-gray-900 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold mb-2 text-green-400">Content Decay</h3>
+              <h3 className="text-lg font-semibold mb-2 text-green-400">Real Earnings</h3>
               <p className="text-gray-300 text-sm">
-                Quality content rises, spam naturally fades.
+                Stake ONU on posts, run nodes, earn based on uptime and network activity.
               </p>
             </div>
             <div className="bg-gray-900 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold mb-2 text-purple-400">Reputation</h3>
+              <h3 className="text-lg font-semibold mb-2 text-purple-400">Solana Powered</h3>
               <p className="text-gray-300 text-sm">
-                Community-driven moderation and trust.
+                Real blockchain transactions. Buy ONU with fiat, stake with Solana wallet.
               </p>
             </div>
           </div>
