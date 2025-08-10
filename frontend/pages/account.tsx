@@ -1,25 +1,24 @@
-import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Connection, PublicKey } from '@solana/web3.js';
 import Link from 'next/link';
-import WalletLinker from '../components/WalletLinker';
+import { useWalletAuth } from '../components/WalletAuth';
 import ReputationDisplay from '../components/ReputationDisplay';
 
 const AccountPage = () => {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated, logout } = useWalletAuth();
   const router = useRouter();
   const { publicKey, connected } = useWallet();
   const [onuBalance, setOnuBalance] = useState<number>(0);
   const TOKEN_SYMBOL = process.env.NEXT_PUBLIC_TOKEN_SYMBOL || 'OnU';
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/auth/login');
     }
-  }, [status, router]);
+  }, [isAuthenticated, router]);
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -51,7 +50,7 @@ const AccountPage = () => {
     fetchBalance();
   }, [connected, publicKey]);
 
-  if (status === 'loading') {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <p>Loading...</p>
@@ -59,12 +58,9 @@ const AccountPage = () => {
     );
   }
 
-  if (!session) {
+  if (!user) {
     return null;
   }
-
-  // Type assertion for session user with extended properties
-  const user = session.user as any;
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -80,25 +76,46 @@ const AccountPage = () => {
                 
                 <div className="space-y-4">
                   <div>
-                    <p className="text-gray-400 text-sm">Username</p>
-                    <p className="text-lg font-medium">{user?.name || 'Anonymous'}</p>
+                    <p className="text-gray-400 text-sm">Display Name</p>
+                    <p className="text-lg font-medium">{user?.displayName || 'Anonymous'}</p>
                   </div>
 
                   <div>
-                    <p className="text-gray-400 text-sm">Email</p>
-                    <p className="text-lg font-medium">{user?.email || 'Not provided'}</p>
+                    <p className="text-gray-400 text-sm">Wallet Address</p>
+                    <p className="text-sm font-mono text-blue-400 break-all">{user?.walletAddress || 'N/A'}</p>
                   </div>
 
                   <div>
-                    <p className="text-gray-400 text-sm">Account ID</p>
-                    <p className="text-sm font-mono text-gray-300">{user?.id || 'N/A'}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-gray-400 text-sm">Reputation Score</p>
+                    <p className="text-gray-400 text-sm">Network Time</p>
                     <p className="text-lg font-medium text-green-400">
-                      {user?.reputationScore || 0} points
+                      {user?.networkTime || '0m'}
                     </p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-400 text-sm">Total Posts</p>
+                    <p className="text-lg font-medium text-blue-400">
+                      {user?.totalPosts || 0} posts
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-400 text-sm">Total Staked</p>
+                    <p className="text-lg font-medium text-purple-400">
+                      {user?.totalStaked || 0} {TOKEN_SYMBOL}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-400 text-sm">Reputation</p>
+                    <p className="text-lg font-medium text-green-400">
+                      {user?.reputation || 0} points
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-400 text-sm">Joined</p>
+                    <p className="text-lg font-medium">{user?.joinedAt || 'Recently'}</p>
                   </div>
                 </div>
               </div>
@@ -107,17 +124,6 @@ const AccountPage = () => {
               <div className="bg-gray-800 rounded-lg p-6">
                 <h2 className="text-xl font-semibold mb-4">Social Connections</h2>
                 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold">0</p>
-                    <p className="text-gray-400 text-sm">Followers</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold">0</p>
-                    <p className="text-gray-400 text-sm">Following</p>
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h3 className="font-medium mb-2">Followers</h3>
@@ -138,7 +144,7 @@ const AccountPage = () => {
             {/* Reputation Profile */}
             <div className="space-y-6">
               <ReputationDisplay 
-                userId={user.id}
+                userId={user.walletAddress}
                 showActions={true}
                 className="w-full"
               />
@@ -174,9 +180,6 @@ const AccountPage = () => {
                 )}
               </div>
 
-              {/* Wallet Linking */}
-              <WalletLinker />
-
               {/* Account Actions */}
               <div className="bg-gray-800 rounded-lg p-6">
                 <h2 className="text-xl font-semibold mb-4">Account Actions</h2>
@@ -197,7 +200,7 @@ const AccountPage = () => {
                   </button>
                   
                   <button
-                    onClick={() => signOut({ callbackUrl: '/' })}
+                    onClick={logout}
                     className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded"
                   >
                     Sign Out

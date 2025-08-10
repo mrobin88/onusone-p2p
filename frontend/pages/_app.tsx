@@ -1,5 +1,4 @@
 import type { AppProps } from 'next/app';
-import { SessionProvider, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
@@ -8,16 +7,16 @@ import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { useMemo } from 'react';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import ClientOnly from '../components/ClientOnly';
-import { WalletAuthProvider } from '../components/WalletAuth';
+import { WalletAuthProvider, useWalletAuth } from '../components/WalletAuth';
 import Wallet from '../components/Wallet';
 import '../styles/globals.css';
 
 const AppContent = ({ Component, pageProps }: AppProps) => {
-  const { data: session, status } = useSession();
+  const { isAuthenticated } = useWalletAuth();
 
   return (
     <>
-      {status === 'authenticated' && (
+      {isAuthenticated && (
         <header className="bg-gray-800 text-white p-4 flex justify-between items-center">
           <Link href="/" className="text-xl font-bold">
             OnusOne
@@ -29,8 +28,8 @@ const AppContent = ({ Component, pageProps }: AppProps) => {
           </nav>
         </header>
       )}
-                    <Component {...pageProps} />
-              <Wallet />
+      <Component {...pageProps} />
+      <Wallet />
     </>
   );
 }
@@ -46,18 +45,16 @@ export default function App({ Component, pageProps }: AppProps) {
   const wallets = useMemo(() => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], []);
 
   return (
-    <SessionProvider session={pageProps.session}>
-      <ConnectionProvider endpoint={endpoint}>
-        <WalletProvider wallets={wallets} autoConnect>
-                            <WalletModalProvider>
-                    <ClientOnly>
-                      <WalletAuthProvider>
-                        <AppContent Component={Component} pageProps={pageProps} />
-                      </WalletAuthProvider>
-                    </ClientOnly>
-                  </WalletModalProvider>
-        </WalletProvider>
-      </ConnectionProvider>
-    </SessionProvider>
+    <ConnectionProvider endpoint={endpoint}>
+      <WalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>
+          <ClientOnly>
+            <WalletAuthProvider>
+              <AppContent Component={Component} pageProps={pageProps} />
+            </WalletAuthProvider>
+          </ClientOnly>
+        </WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
   );
 }

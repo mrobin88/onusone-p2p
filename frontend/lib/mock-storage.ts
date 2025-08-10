@@ -264,7 +264,6 @@ const seedMockData = async () => {
     id: 'test-user-123',
     username: 'testuser',
     email: 'test@example.com',
-    passwordHash: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBcQQFQ8mVQN4O', // 'password'
     walletAddress: null,
     reputationScore: 100,
     createdAt: new Date().toISOString(),

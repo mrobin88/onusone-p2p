@@ -163,7 +163,6 @@ export class UserDAO extends BaseDAO {
     id: string;
     username: string;
     email: string;
-    passwordHash: string;
     walletAddress?: string;
   }): Promise<boolean> {
     const user = {

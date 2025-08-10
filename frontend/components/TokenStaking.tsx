@@ -4,6 +4,9 @@ import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
 import { realSolanaPayments, RealPayment } from '../lib/real-solana-payments';
 import Button from './Button';
+import { useToast } from './Toast';
+import { LoadingSpinner } from './LoadingSpinner';
+import { ProgressBar } from './ProgressBar';
 
 interface TokenStakingProps {
   postId: string;
@@ -36,6 +39,7 @@ export default function TokenStaking({
 }: TokenStakingProps) {
   const { publicKey, connected, wallet } = useWallet();
   const { setVisible } = useWalletModal();
+  const { showSuccess, showError, showInfo, showLoading, dismissToast } = useToast();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   
   // Use external isOpen if provided, otherwise use internal state

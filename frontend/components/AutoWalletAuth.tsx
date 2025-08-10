@@ -1,15 +1,16 @@
 /**
  * Auto Wallet Authentication Component
  * Automatically logs in users when they connect their wallet
+ * Uses the new WalletAuth system instead of NextAuth
  */
 
 import { useEffect, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { signIn, useSession } from 'next-auth/react';
+import { useWalletAuth } from './WalletAuth';
 
 export default function AutoWalletAuth() {
   const { connected, publicKey } = useWallet();
-  const { data: session, status } = useSession();
+  const { isAuthenticated, login } = useWalletAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasProcessed, setHasProcessed] = useState(false);
 
@@ -21,7 +22,7 @@ export default function AutoWalletAuth() {
       // 3. User is not already authenticated
       // 4. We haven't already processed this connection
       // 5. Not currently processing
-      if (!connected || !publicKey || status === 'authenticated' || hasProcessed || isProcessing) {
+      if (!connected || !publicKey || isAuthenticated || hasProcessed || isProcessing) {
         return;
       }
 
@@ -29,36 +30,14 @@ export default function AutoWalletAuth() {
       setIsProcessing(true);
 
       try {
-        const walletAddress = publicKey.toString();
+        // Use the WalletAuth system to authenticate
+        const success = await login();
         
-        // First, try to create account if it doesn't exist
-        const registerResponse = await fetch('/api/auth/wallet-register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            walletAddress,
-            username: `User${walletAddress.slice(-6)}`,
-            autoCreated: true
-          })
-        });
-
-        if (!registerResponse.ok && registerResponse.status !== 200 && registerResponse.status !== 201) {
-          const errorData = await registerResponse.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to create/verify wallet account');
-        }
-
-        // Now try to sign in with the wallet
-        console.log('🔐 Signing in with wallet...');
-        const signInResult = await signIn('wallet', {
-          walletAddress,
-          redirect: false
-        });
-
-        if (signInResult?.ok) {
-          console.log(`✅ Auto-authenticated wallet: ${walletAddress.slice(0, 8)}...${walletAddress.slice(-4)}`);
+        if (success) {
+          console.log(`✅ Auto-authenticated wallet: ${publicKey.toString().slice(0, 8)}...${publicKey.toString().slice(-4)}`);
           setHasProcessed(true);
         } else {
-          console.error('❌ Wallet sign-in failed:', signInResult?.error);
+          console.error('❌ Wallet authentication failed');
         }
 
       } catch (error) {
@@ -69,7 +48,7 @@ export default function AutoWalletAuth() {
     };
 
     handleWalletAuth();
-  }, [connected, publicKey, status, hasProcessed, isProcessing]);
+  }, [connected, publicKey, isAuthenticated, hasProcessed, isProcessing, login]);
 
   // Reset processed flag when wallet disconnects
   useEffect(() => {
@@ -80,7 +59,7 @@ export default function AutoWalletAuth() {
   }, [connected]);
 
   // Show processing indicator
-  if (isProcessing && connected && !session) {
+  if (isProcessing && connected && !isAuthenticated) {
     return (
       <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">
         <div className="flex items-center space-x-2">
@@ -92,7 +71,7 @@ export default function AutoWalletAuth() {
   }
 
   // Show success indicator
-  if (connected && session && hasProcessed) {
+  if (connected && isAuthenticated && hasProcessed) {
     return (
       <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-500">
         <div className="flex items-center space-x-2">
