@@ -106,7 +106,7 @@ export default function BoardsIndex() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/auth/login');
+      router.push('/');
       return;
     }
 
@@ -178,7 +178,7 @@ export default function BoardsIndex() {
               </div>
               
               <div className="flex items-center space-x-4">
-                <span className="text-gray-300">Welcome, {user?.username}!</span>
+                <span className="text-gray-300">Welcome, {user?.displayName}!</span>
                 <Button onClick={() => logout()} variant="secondary" size="sm">
                   Logout
                 </Button>

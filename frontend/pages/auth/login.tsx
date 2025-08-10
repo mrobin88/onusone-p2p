@@ -54,80 +54,95 @@ export default function LoginPage() {
 
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Already Logged In</h1>
-          <p>Redirecting...</p>
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-white font-bold text-2xl">O</span>
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Already Logged In</h1>
+          <p className="text-gray-400">Redirecting...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <Head>
-        <title>Login - OnusOne P2P</title>
-        <meta name="description" content="Login to OnusOne P2P Network with your wallet" />
+        <title>Login - OnusOne</title>
+        <meta name="description" content="Connect your wallet to OnusOne" />
       </Head>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto">
+          {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome to OnusOne</h1>
-            <p className="text-gray-400">Connect your wallet to access the P2P Network</p>
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-white font-bold text-2xl">O</span>
+            </div>
+            <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
+            <p className="text-gray-400">Connect your wallet to continue</p>
           </div>
 
-          <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <div className="text-6xl mb-4">🔐</div>
+          {/* Login Card */}
+          <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 shadow-xl">
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="text-4xl mb-3">🔐</div>
                 <h2 className="text-xl font-semibold mb-2">Connect Your Wallet</h2>
-                <p className="text-gray-400 text-sm">Your wallet is your identity</p>
+                <p className="text-gray-400 text-sm">Your wallet is your identity on OnusOne</p>
               </div>
 
               <Button
                 onClick={handleConnectWallet}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg"
+                className="w-full py-4 text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 disabled={loading}
               >
                 {loading ? 'Connecting...' : '🔗 Connect Wallet'}
               </Button>
 
               {error && (
-                <div className="bg-red-900 border border-red-700 text-red-300 px-3 py-2 rounded-md text-sm">
+                <div className="bg-red-500/10 border border-red-500/20 text-red-300 px-4 py-3 rounded-xl text-sm">
                   {error}
                 </div>
               )}
 
-              <div className="mt-6 pt-6 border-t border-gray-700">
-                <div className="text-center">
-                  <p className="text-sm text-gray-400 mb-3">New to OnusOne?</p>
-                  <Button
-                    onClick={() => router.push('/auth/register')}
-                    variant="secondary"
-                    size="sm"
-                    className="w-full"
-                  >
-                    Create Account
-                  </Button>
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-black text-gray-400">New to OnusOne?</span>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-6 text-center">
               <Button
-                onClick={() => router.push('/')}
+                onClick={() => router.push('/auth/register')}
                 variant="secondary"
-                size="sm"
+                size="lg"
+                className="w-full"
               >
-                Back to Home
+                Create Account
               </Button>
             </div>
           </div>
 
-          {/* Wallet connection status */}
+          {/* Back to Home */}
+          <div className="text-center mt-6">
+            <Button
+              onClick={() => router.push('/')}
+              variant="secondary"
+              size="sm"
+              className="text-gray-400 hover:text-white"
+            >
+              ← Back to Home
+            </Button>
+          </div>
+
+          {/* Wallet Status */}
           {connected && publicKey && (
-            <div className="mt-4 bg-green-900 border border-green-700 text-green-300 px-4 py-3 rounded-md text-center">
+            <div className="mt-6 bg-green-500/10 border border-green-500/20 text-green-300 px-4 py-3 rounded-xl text-center">
               <div className="flex items-center justify-center space-x-2">
                 <span>✅</span>
                 <span>Wallet Connected: {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</span>

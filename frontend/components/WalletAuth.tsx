@@ -6,6 +6,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useRouter } from 'next/router';
 import { WalletAuthSystem, WalletProfile } from '../lib/wallet-auth-system';
 
 interface WalletUser {
@@ -34,6 +35,7 @@ const WalletAuthContext = createContext<WalletAuthContextType | undefined>(undef
 
 export function WalletAuthProvider({ children }: { children: React.ReactNode }) {
   const { connected, publicKey, disconnect } = useWallet();
+  const router = useRouter();
   const [user, setUser] = useState<WalletUser | null>(null);
   const [profile, setProfile] = useState<WalletProfile | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -104,6 +106,12 @@ export function WalletAuthProvider({ children }: { children: React.ReactNode }) 
       });
       
       console.log(`✅ Wallet authenticated: ${profile.displayName}`);
+      
+      // Redirect to boards page after successful authentication
+      if (router.pathname === '/') {
+        router.push('/boards');
+      }
+      
       return true;
       
     } catch (error) {
