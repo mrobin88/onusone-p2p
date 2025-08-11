@@ -302,13 +302,7 @@ export default function BoardDetail() {
 
     // Update user profile posts
     if (addPost) {
-      await addPost({
-        id: replyMessage.id,
-        content: replyContent,
-        boardSlug: slug as string,
-        timestamp: replyMessage.createdAt,
-        parentMessageId: parentMessageId
-      });
+      await addPost(replyContent, slug as string);
     }
   };
 
@@ -363,7 +357,15 @@ export default function BoardDetail() {
             setReplyModalOpen(false);
             setReplyingToMessage(null);
           }}
-          parentMessage={replyingToMessage}
+          parentMessage={{
+            id: replyingToMessage.id,
+            content: replyingToMessage.content,
+            author: {
+              username: replyingToMessage.author.username,
+              reputation: replyingToMessage.author.reputation
+            },
+            timestamp: replyingToMessage.createdAt
+          }}
           onReplySubmit={handleReplySubmit}
           boardSlug={slug as string}
         />

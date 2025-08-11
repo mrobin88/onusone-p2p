@@ -59,7 +59,7 @@ async function getPosts(req: NextApiRequest, res: NextApiResponse) {
   if (ids.length === 0) return res.status(200).json([]);
   
   // Fetch posts individually since pipeline might not be available
-  const posts = [];
+  const posts: any[] = [];
   for (const id of ids) {
     const post = await kv.hgetall(id);
     if (post) posts.push(post);
@@ -67,8 +67,8 @@ async function getPosts(req: NextApiRequest, res: NextApiResponse) {
   
   // Calculate decay scores and filter posts
   const postsWithDecay = posts
-    .filter((p) => p && p.status !== 'closed')
-    .map((post) => {
+    .filter((p: any) => p && p.status !== 'closed')
+    .map((post: any) => {
       const decayScore = calculateDecayScore(post);
       return {
         ...post,

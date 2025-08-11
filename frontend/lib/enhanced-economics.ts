@@ -21,6 +21,7 @@ export interface NetworkMetrics {
   averageLatency: number;
   uptimePercentage: number;
   lastUpdate: number;
+  maxNetworkCapacity: number; // Maximum network capacity for congestion calculation
 }
 
 export interface StakePool {
@@ -655,7 +656,8 @@ export class EnhancedEconomics extends EventEmitter {
       messageVolume: 1000,
       averageLatency: 150,
       uptimePercentage: 92,
-      lastUpdate: Date.now()
+      lastUpdate: Date.now(),
+      maxNetworkCapacity: 10000
     };
   }
 

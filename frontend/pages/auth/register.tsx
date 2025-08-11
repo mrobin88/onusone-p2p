@@ -232,7 +232,7 @@ export default function RegisterPage() {
 
                 <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-xl text-center">
                   <p className="text-green-300 text-sm">
-                    ✅ Wallet connected: {publicKey?.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}
+                    ✅ Wallet connected: {publicKey?.toString().slice(0, 4)}...{publicKey?.toString().slice(-4)}
                   </p>
                 </div>
               </div>

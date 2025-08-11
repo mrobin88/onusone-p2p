@@ -10,7 +10,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { enhancedEconomics, NetworkMetrics } from './enhanced-economics';
+import { EnhancedEconomics, NetworkMetrics } from './enhanced-economics';
 
 export interface DecayableContent {
   id: string;
@@ -38,6 +38,7 @@ export interface DecayMetrics {
   networkCongestionLevel: 'low' | 'medium' | 'high' | 'critical';
   estimatedTreasuryTaxRate: number; // Tokens taxed to treasury per hour
   qualityDecayCorrelation: number; // Correlation between quality and decay
+  estimatedBurnRate: number; // Estimated burn rate per hour
 }
 
 export interface DecayAccelerationEvent {
@@ -62,21 +63,21 @@ export class EnhancedDecay extends EventEmitter {
   private content: Map<string, DecayableContent> = new Map();
   private qualityMetrics: Map<string, QualityMetrics> = new Map();
   private decayHistory: DecayAccelerationEvent[] = [];
-  
+  private enhancedEconomics: EnhancedEconomics;
+
   // Decay configuration
   private baseDecayRates = {
-    post: 0.5, // 0.5% per hour
-    comment: 0.8, // 0.8% per hour
-    stake: 0.2, // 0.2% per hour
-    node: 0.1  // 0.1% per hour
+    post: 2.5,      // 2.5% per hour
+    comment: 3.0,   // 3.0% per hour
+    stake: 1.0,     // 1.0% per hour
+    node: 0.5       // 0.5% per hour
   };
   
   // Quality thresholds
   private qualityThresholds = {
-    excellent: 80,
-    good: 60,
-    fair: 40,
-    poor: 20
+    excellent: 85,
+    good: 70,
+    poor: 40
   };
   
   // Network congestion thresholds
@@ -90,16 +91,12 @@ export class EnhancedDecay extends EventEmitter {
   constructor() {
     super();
     
-    // Start decay processing
-    this.startDecayProcessing();
+    // Initialize enhanced economics integration
+    this.enhancedEconomics = new EnhancedEconomics();
     
-    // Listen to economic system events
-    enhancedEconomics.on('network:updated', (metrics: NetworkMetrics) => {
-      this.updateDecayRates(metrics);
-    });
-    
-    enhancedEconomics.on('parameters:adjusted', (config) => {
-      this.adjustDecayParameters(config);
+    this.enhancedEconomics.on('parameters:adjusted', (config) => {
+      // Handle parameter adjustments if needed
+      console.log('Enhanced economics parameters adjusted:', config);
     });
   }
 
@@ -202,7 +199,7 @@ export class EnhancedDecay extends EventEmitter {
    * Calculate initial acceleration factor
    */
   private calculateInitialAcceleration(content: any): number {
-    const networkMetrics = enhancedEconomics.getNetworkMetrics();
+    const networkMetrics = EnhancedEconomics.getNetworkMetrics();
     const congestionLevel = this.getCongestionLevel(networkMetrics.messageVolume / networkMetrics.maxNetworkCapacity);
     
     let acceleration = 1.0;
@@ -400,7 +397,7 @@ export class EnhancedDecay extends EventEmitter {
     content.decayRate = this.calculateBaseDecayRate(content.contentType, content.qualityScore);
     
     // Recalculate acceleration factor
-    const networkMetrics = enhancedEconomics.getNetworkMetrics();
+    const networkMetrics = EnhancedEconomics.getNetworkMetrics();
     const congestionLevel = this.getCongestionLevel(networkMetrics.messageVolume / networkMetrics.maxNetworkCapacity);
     const networkHealth = networkMetrics.networkHealth / 100;
     
@@ -490,7 +487,7 @@ export class EnhancedDecay extends EventEmitter {
       const taxAmount = Math.floor(content.stakeAmount * 0.1); // 10% tax to treasury
       
       // Emit treasury tax event
-      enhancedEconomics.emit('tokens:treasury_tax', {
+      EnhancedEconomics.emit('tokens:treasury_tax', {
         amount: taxAmount,
         reason: 'content_decay_tax',
         contentId: content.id,
@@ -514,7 +511,8 @@ export class EnhancedDecay extends EventEmitter {
       averageAccelerationFactor: this.calculateAverageAccelerationFactor(),
       networkCongestionLevel: this.getCurrentCongestionLevel(),
       estimatedTreasuryTaxRate: this.calculateEstimatedTreasuryTaxRate(),
-      qualityDecayCorrelation: this.calculateQualityDecayCorrelation()
+      qualityDecayCorrelation: this.calculateQualityDecayCorrelation(),
+      estimatedBurnRate: this.calculateEstimatedBurnRate()
     };
     
     this.emit('metrics:generated', metrics);
@@ -546,7 +544,7 @@ export class EnhancedDecay extends EventEmitter {
    * Get current congestion level
    */
   private getCurrentCongestionLevel(): 'low' | 'medium' | 'high' | 'critical' {
-    const networkMetrics = enhancedEconomics.getNetworkMetrics();
+    const networkMetrics = EnhancedEconomics.getNetworkMetrics();
     const ratio = networkMetrics.messageVolume / networkMetrics.maxNetworkCapacity;
     return this.getCongestionLevel(ratio);
   }
@@ -598,6 +596,22 @@ export class EnhancedDecay extends EventEmitter {
   }
 
   /**
+   * Calculate estimated burn rate
+   */
+  private calculateEstimatedBurnRate(): number {
+    let totalBurnRate = 0;
+    
+    for (const content of this.content.values()) {
+      if (!content.isPreserved) {
+        const hourlyBurn = content.stakeAmount * (content.decayRate * content.accelerationFactor) / 100;
+        totalBurnRate += hourlyBurn;
+      }
+    }
+    
+    return totalBurnRate;
+  }
+
+  /**
    * Get decay metrics
    */
   getDecayMetrics(): DecayMetrics {
@@ -608,8 +622,9 @@ export class EnhancedDecay extends EventEmitter {
       averageDecayScore: this.calculateAverageDecayScore(),
       averageAccelerationFactor: this.calculateAverageAccelerationFactor(),
       networkCongestionLevel: this.getCurrentCongestionLevel(),
-      estimatedBurnRate: this.calculateEstimatedBurnRate(),
-      qualityDecayCorrelation: this.calculateQualityDecayCorrelation()
+      estimatedTreasuryTaxRate: this.calculateEstimatedTreasuryTaxRate(),
+      qualityDecayCorrelation: this.calculateQualityDecayCorrelation(),
+      estimatedBurnRate: this.calculateEstimatedBurnRate()
     };
   }
 
