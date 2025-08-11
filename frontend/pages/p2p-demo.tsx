@@ -17,16 +17,16 @@ export default function P2PDemo() {
     spamBlocked: 0
   });
 
-  // Fetch real network stats from WorkingBackend
+  // Fetch real network stats from Render backend
   useEffect(() => {
     const fetchNetworkStats = async () => {
       try {
-        // Try to connect to real WorkingBackend
-        const response = await fetch('http://localhost:8888/health');
+        // Try to connect to Render backend
+        const response = await fetch('https://onusone-p2p.onrender.com/health');
         if (response.ok) {
           const healthData = await response.json();
           setNetworkStats(prev => ({
-            connectedPeers: healthData.uptime ? Math.floor(healthData.uptime / 1000) : 0,
+            connectedPeers: healthData.connections || 0,
             userReputation: isAuthenticated ? 100 + Math.floor(Math.random() * 200) : 0,
             networkHealth: healthData.status === 'healthy' ? 'Excellent' : 'Good',
             totalMessages: healthData.uptime ? Math.floor(healthData.uptime / 10) : 0,
@@ -36,11 +36,11 @@ export default function P2PDemo() {
           }));
         }
       } catch (error) {
-        console.log('WorkingBackend not accessible, showing local stats');
+        console.log('Render backend not accessible, showing local stats');
         setNetworkStats(prev => ({
           ...prev,
           connectedPeers: 0,
-          networkHealth: 'Local Only',
+          networkHealth: 'Connecting to Render...',
           totalMessages: 0,
           activeDecay: 0,
           contentQuality: 75,
@@ -63,8 +63,8 @@ export default function P2PDemo() {
   };
 
   const handleViewNetwork = () => {
-    // Open WorkingBackend health endpoint
-    window.open('http://localhost:8888/health', '_blank');
+    // Open Render backend health endpoint
+    window.open('https://onusone-p2p.onrender.com/health', '_blank');
   };
 
   const getReputationColor = (rep: number) => {

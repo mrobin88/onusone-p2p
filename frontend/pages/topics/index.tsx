@@ -101,20 +101,20 @@ export default function TopicsIndex() {
       return;
     }
 
-      // Fetch real network stats from WorkingBackend
+      // Fetch real network stats from Render backend
   const fetchNetworkStats = async () => {
     try {
-      const response = await fetch('http://localhost:8888/health');
+      const response = await fetch('https://onusone-p2p.onrender.com/health');
       if (response.ok) {
         const healthData = await response.json();
         setNetworkStats({
-          activePeers: healthData.uptime ? Math.floor(healthData.uptime / 1000) : 0,
+          activePeers: healthData.connections || 0,
           totalTopics: topics.length,
           networkHealth: healthData.status === 'healthy' ? 'Excellent' : 'Good'
         });
       }
     } catch (error) {
-      console.log('WorkingBackend not accessible, showing local stats');
+      console.log('Render backend not accessible, showing local stats');
       setNetworkStats({
         activePeers: 0,
         totalTopics: topics.length,

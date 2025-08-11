@@ -10,10 +10,10 @@ export const ORBIT_CONFIG = {
     WEBSOCKET_URL: 'ws://localhost:8889'
   },
   
-  // Production (your hosted server)
+  // Production (Render backend)
   PROD: {
-    SERVER_URL: process.env.NEXT_PUBLIC_ORBIT_SERVER_URL || 'https://your-server-ip.com:8889',
-    WEBSOCKET_URL: process.env.NEXT_PUBLIC_ORBIT_WS_URL || 'wss://your-server-ip.com:8889'
+    SERVER_URL: process.env.NEXT_PUBLIC_ORBIT_SERVER_URL || 'https://onusone-p2p.onrender.com',
+    WEBSOCKET_URL: process.env.NEXT_PUBLIC_ORBIT_WS_URL || 'wss://onusone-p2p.onrender.com'
   },
   
   // Auto-detect environment
@@ -36,7 +36,7 @@ export const ORBIT_CONFIG = {
 };
 
 // Environment variables you need to set:
-// NEXT_PUBLIC_ORBIT_SERVER_URL=https://your-server-ip.com:8889
-// NEXT_PUBLIC_ORBIT_WS_URL=wss://your-server-ip.com:8889
+// NEXT_PUBLIC_ORBIT_SERVER_URL=https://onusone-p2p.onrender.com
+// NEXT_PUBLIC_ORBIT_WS_URL=wss://onusone-p2p.onrender.com
 
 export default ORBIT_CONFIG;
