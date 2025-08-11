@@ -1,6 +1,6 @@
 /**
- * Modern Dashboard Layout
- * Real-time stats from backend systems
+ * 90s Neo-Noir Horse Track Casino Layout
+ * Checkered patterns, green casino feels, dancing skeletons
  */
 
 import React, { useState, useEffect } from 'react';
@@ -81,207 +81,189 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
   }, [isAuthenticated]);
 
   return (
-    <div className="scribe-layout">
+    <div className="min-h-screen bg-black text-green-400 font-mono">
+      {/* 90s Style CSS */}
+      <style jsx>{`
+        .scribe-layout {
+          background: 
+            linear-gradient(45deg, #000 25%, transparent 25%),
+            linear-gradient(-45deg, #000 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #000 75%),
+            linear-gradient(-45deg, transparent 75%, #000 75%);
+          background-size: 20px 20px;
+          background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+          background-color: #0a0a0a;
+        }
+        
+        .casino-header {
+          background: linear-gradient(90deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+          border-bottom: 3px solid #00ff00;
+          box-shadow: 0 4px 20px rgba(0, 255, 0, 0.3);
+        }
+        
+        .checkered-nav {
+          background: 
+            linear-gradient(45deg, #00ff00 25%, transparent 25%),
+            linear-gradient(-45deg, #00ff00 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #00ff00 75%),
+            linear-gradient(-45deg, transparent 75%, #00ff00 75%);
+          background-size: 8px 8px;
+          background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+          background-color: #0a0a0a;
+        }
+        
+        .horse-track-border {
+          border: 2px solid #00ff00;
+          border-radius: 8px;
+          background: linear-gradient(90deg, #0a0a0a, #1a1a1a, #0a0a0a);
+          box-shadow: 
+            inset 0 0 20px rgba(0, 255, 0, 0.2),
+            0 0 20px rgba(0, 255, 0, 0.3);
+        }
+        
+        .dancing-skeleton {
+          animation: dance 2s infinite;
+        }
+        
+        @keyframes dance {
+          0%, 100% { transform: rotate(0deg) scale(1); }
+          25% { transform: rotate(5deg) scale(1.1); }
+          50% { transform: rotate(0deg) scale(1); }
+          75% { transform: rotate(-5deg) scale(0.9); }
+        }
+        
+        .neon-glow {
+          text-shadow: 
+            0 0 5px #00ff00,
+            0 0 10px #00ff00,
+            0 0 15px #00ff00,
+            0 0 20px #00ff00;
+        }
+        
+        .casino-button {
+          background: linear-gradient(45deg, #00ff00, #00cc00);
+          border: 2px solid #00ff00;
+          color: #000;
+          font-weight: bold;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          transition: all 0.3s ease;
+        }
+        
+        .casino-button:hover {
+          background: linear-gradient(45deg, #00cc00, #00ff00);
+          box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+          transform: translateY(-2px);
+        }
+      `}</style>
+
       {/* Compact Wallet Widget */}
       <CompactWalletWidget />
       
-      {/* Header */}
-      <header className="scribe-header">
-        <div className="flex items-center space-x-6">
-          <Link href="/" className="heading-2 text-accent-gold no-underline">
-            OnusOne
-          </Link>
-          <span className="body-small text-text-ash">Dashboard</span>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          {isAuthenticated && user && (
-            <>
-              <Link href="/profile" className="btn-text">
-                👤 {user.displayName}
-              </Link>
-              <span className="caption text-text-ash">
-                {user.reputation || 0} rep • {user.totalPosts || 0} posts
-              </span>
-            </>
-          )}
+      {/* 90s Casino Header */}
+      <header className="casino-header p-4 border-b-2 border-green-400">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center space-x-6">
+            <Link href="/" className="text-3xl font-bold neon-glow text-green-400 hover:text-green-300 transition-colors">
+              🏇 ONUSONE 🏇
+            </Link>
+            <div className="flex items-center space-x-2">
+              <span className="dancing-skeleton text-2xl">💀</span>
+              <span className="text-green-400 font-bold">DASHBOARD</span>
+              <span className="dancing-skeleton text-2xl">💀</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            {isAuthenticated && user && (
+              <>
+                <Link href="/profile" className="casino-button px-4 py-2 rounded">
+                  👤 {user.username}
+                </Link>
+                <button 
+                  onClick={logout}
+                  className="casino-button px-4 py-2 rounded"
+                >
+                  🚪 EXIT
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Sidebar - Navigation */}
-      <aside className="scribe-sidebar">
-        <div className="space-y-6">
-          {/* Primary Navigation */}
-          <div>
-            <h3 className="heading-3 text-text-ash mb-4">Navigation</h3>
+      <div className="flex">
+        {/* 90s Checkered Sidebar */}
+        <aside className="checkered-nav w-64 min-h-screen p-4 border-r-2 border-green-400">
+          <div className="horse-track-border p-4 mb-6">
+            <h3 className="text-green-400 font-bold text-lg mb-3 neon-glow">
+              🎰 NETWORK STATS 🎰
+            </h3>
+            {loading ? (
+              <div className="text-green-400">Loading...</div>
+            ) : (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Messages:</span>
+                  <span className="text-green-300 font-bold">{stats.totalMessages}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Boards:</span>
+                  <span className="text-green-300 font-bold">{stats.totalBoards}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Users:</span>
+                  <span className="text-green-300 font-bold">{stats.activeUsers}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Status:</span>
+                  <span className={`font-bold ${stats.backendStatus === 'online' ? 'text-green-300' : 'text-red-400'}`}>
+                    {stats.backendStatus === 'online' ? '🟢 ONLINE' : '🔴 OFFLINE'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="horse-track-border p-4">
+            <h3 className="text-green-400 font-bold text-lg mb-3 neon-glow">
+              🏁 RACE TRACKS 🏁
+            </h3>
             <nav className="space-y-2">
-              <Link href="/" className={`nav-item ${router.pathname === '/' ? 'active' : ''}`}>
-                🏠 Home
-              </Link>
-              <Link href="/boards" className={`nav-item ${router.pathname === '/boards' ? 'active' : ''}`}>
-                📋 All Boards
-              </Link>
-              <Link href="/profile" className={`nav-item ${router.pathname === '/profile' ? 'active' : ''}`}>
-                👤 Profile
-              </Link>
-              <Link href="/become-node" className={`nav-item ${router.pathname === '/become-node' ? 'active' : ''}`}>
-                💰 Become Node
-              </Link>
+              {BOARDS.map((board) => (
+                <Link
+                  key={board.slug}
+                  href={`/boards/${board.slug}`}
+                  className={`block p-2 rounded transition-all duration-200 ${
+                    currentBoard === board.slug
+                      ? 'bg-green-400 text-black font-bold'
+                      : 'text-green-300 hover:bg-green-400/20 hover:text-green-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{board.name}</span>
+                    <span className="text-xs opacity-70">{board.category}</span>
+                  </div>
+                </Link>
+              ))}
             </nav>
           </div>
 
-          {/* Real Network Stats */}
-          <div>
-            <h3 className="heading-3 text-text-ash mb-4">System Status</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-text-slate">Backend:</span>
-                <span className={`status-${stats.backendStatus}`}>
-                  ● {stats.backendStatus === 'online' ? 'Online' : 'Offline'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-slate">Boards:</span>
-                <span className="text-text-ash">{stats.totalBoards} active</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-slate">Messages:</span>
-                <span className="text-text-ash">{stats.totalMessages} total</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-slate">Users:</span>
-                <span className="text-text-ash">{stats.activeUsers} online</span>
-              </div>
-              <div className="text-xs text-text-slate mt-2">
-                Updated: {stats.lastUpdate}
-              </div>
-            </div>
+          {/* Dancing Skeleton Section */}
+          <div className="horse-track-border p-4 mt-6 text-center">
+            <div className="dancing-skeleton text-4xl mb-2">💀</div>
+            <div className="text-green-400 text-sm font-bold">DANCING SKELETON</div>
+            <div className="text-green-300 text-xs">90s VIBES</div>
           </div>
+        </aside>
 
-          {/* User Stats */}
-          {isAuthenticated && user && (
-            <div>
-              <h3 className="heading-3 text-text-ash mb-4">Your Stats</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-text-slate">Reputation:</span>
-                  <span className="text-accent-gold font-semibold">{user.reputation || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-slate">Posts:</span>
-                  <span className="text-text-ash">{user.totalPosts || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-slate">Staked:</span>
-                  <span className="text-text-ash">{user.totalStaked || 0} ONU</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* Channel List - Boards */}
-      <aside className="scribe-channel-list">
-        <div>
-          <h3 className="heading-3 text-text-ash mb-4">Boards</h3>
-          <nav className="space-y-1">
-            {BOARDS.map((board) => (
-              <Link
-                key={board.slug}
-                href={`/boards/${board.slug}`}
-                className={`channel-item ${currentBoard === board.slug ? 'active' : ''}`}
-              >
-                <div className="flex items-center justify-between">
-                  <span>{board.name}</span>
-                  <span className="caption text-text-slate">{board.category}</span>
-                </div>
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-8 space-y-2">
-          <button className="btn-secondary w-full text-sm">
-            📝 Create Board
-          </button>
-          <button className="btn-secondary w-full text-sm">
-            🔍 Search Messages
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="scribe-main-content">
-        {children}
-      </main>
-
-      <style jsx>{`
-        .nav-item {
-          display: flex;
-          align-items: center;
-          padding: 8px 12px;
-          border-radius: 6px;
-          color: var(--text-ash);
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 500;
-          transition: all var(--animation-fast);
-        }
-
-        .nav-item:hover {
-          background: rgba(212, 175, 55, 0.1);
-          color: var(--accent-gold);
-        }
-
-        .nav-item.active {
-          background: var(--accent-gold);
-          color: var(--text-ink);
-          font-weight: 600;
-        }
-
-        .channel-item {
-          display: block;
-          padding: 8px 12px;
-          border-radius: 6px;
-          color: var(--text-ash);
-          text-decoration: none;
-          font-size: 14px;
-          transition: all var(--animation-fast);
-        }
-
-        .channel-item:hover {
-          background: rgba(212, 175, 55, 0.1);
-          color: var(--accent-gold);
-        }
-
-        .channel-item.active {
-          background: rgba(212, 175, 55, 0.2);
-          color: var(--accent-gold);
-          font-weight: 600;
-        }
-
-        .status-online {
-          color: #10b981;
-        }
-
-        .status-offline {
-          color: #ef4444;
-        }
-
-        .text-accent-gold {
-          color: var(--accent-gold);
-        }
-
-        .text-text-ash {
-          color: var(--text-ash);
-        }
-
-        .text-text-slate {
-          color: var(--text-slate);
-        }
-      `}</style>
+        {/* Main Content Area */}
+        <main className="flex-1 p-6">
+          <div className="horse-track-border p-6 min-h-screen">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

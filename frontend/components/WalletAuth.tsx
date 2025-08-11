@@ -1,134 +1,112 @@
 /**
- * Pure Wallet Authentication Context
- * NO KV STORE, NO PASSWORDS, NO NEXTAUTH - ONLY WALLET IDENTITY
- * Your wallet IS your account. Period.
+ * Simplified Account Management System
+ * Guest mode + simple wallet connection - no switching confusion
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useRouter } from 'next/router';
-import { WalletAuthSystem, WalletProfile } from '../lib/wallet-auth-system';
 
-interface WalletUser {
+interface SimpleUser {
   id: string;
   username: string;
-  walletAddress: string;
-  publicKey: string;
-  displayName: string;
+  walletAddress?: string;
+  publicKey?: string;
+  isGuest: boolean;
   totalPosts: number;
-  totalStaked: number;
-  reputation: number;
-  networkTime: string;
   joinedAt: string;
-  tokenBalance?: number;
-  totalEarned?: number;
-  totalBurned?: number;
 }
 
-interface WalletAuthContextType {
-  user: WalletUser | null;
-  profile: WalletProfile | null;
+interface SimpleAuthContextType {
+  user: SimpleUser | null;
   isAuthenticated: boolean;
   isConnecting: boolean;
+  isGuest: boolean;
+  canPost: boolean;
   login: () => Promise<boolean>;
   logout: () => void;
+  createGuestAccount: () => void;
+  connectWallet: () => Promise<boolean>;
   addPost: (content: string, boardSlug: string) => any;
-  addStake: (postId: string, amount: number, txHash: string) => void;
 }
 
-const WalletAuthContext = createContext<WalletAuthContextType | undefined>(undefined);
+const SimpleAuthContext = createContext<SimpleAuthContextType | undefined>(undefined);
 
 export function WalletAuthProvider({ children }: { children: React.ReactNode }) {
-  const { connected, publicKey, disconnect } = useWallet();
+  const { connected, publicKey, connect, disconnect } = useWallet();
   const router = useRouter();
-  const [user, setUser] = useState<WalletUser | null>(null);
-  const [profile, setProfile] = useState<WalletProfile | null>(null);
+  const [user, setUser] = useState<SimpleUser | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
-
-  // Auto-login when wallet connects
-  useEffect(() => {
-    if (connected && publicKey && !user) {
-      handleAutoLogin();
-    } else if (!connected && user) {
-      handleLogout();
-    }
-  }, [connected, publicKey, user]);
 
   // Load existing session on page load
   useEffect(() => {
     loadExistingSession();
   }, []);
 
+  // Handle wallet connection changes
+  useEffect(() => {
+    if (connected && publicKey && !user?.walletAddress) {
+      handleWalletConnected();
+    }
+  }, [connected, publicKey, user]);
+
   const loadExistingSession = () => {
     try {
-      const session = WalletAuthSystem.getCurrentSession();
-      const profile = WalletAuthSystem.getCurrentProfile();
-      
-      if (session && profile && session.isConnected) {
-        setProfile(profile);
-        setUser({
-          id: profile.walletAddress, // Use wallet address as ID
-          username: profile.displayName, // Use displayName as username
-          walletAddress: profile.walletAddress,
-          publicKey: profile.publicKey,
-          displayName: profile.displayName,
-          totalPosts: profile.totalPosts,
-          totalStaked: profile.totalStaked,
-          reputation: profile.reputation,
-          networkTime: formatTime(profile.networkTime),
-          joinedAt: new Date(profile.joinedAt).toLocaleDateString()
-        });
-        console.log(`🔑 Restored wallet session: ${profile.displayName}`);
+      const session = localStorage.getItem('onusone-session');
+      if (session) {
+        const sessionData = JSON.parse(session);
+        setUser(sessionData.user);
+        console.log(`🔑 Restored session: ${sessionData.user.username}`);
       }
     } catch (error) {
-      console.error('Error loading existing session:', error);
+      console.error('Error loading session:', error);
     }
   };
 
-  const handleAutoLogin = async (): Promise<boolean> => {
-    if (!connected || !publicKey) {
-      console.warn('Wallet not connected during auto-login');
-      return false;
-    }
+  const createGuestAccount = () => {
+    const guestId = 'guest_' + Date.now();
+    const guestUser: SimpleUser = {
+      id: guestId,
+      username: `Guest${Math.floor(Math.random() * 1000)}`,
+      isGuest: true,
+      totalPosts: 0,
+      joinedAt: new Date().toLocaleDateString()
+    };
 
-    setIsConnecting(true);
+    setUser(guestUser);
+    saveSession(guestUser);
+    console.log(`👤 Created guest account: ${guestUser.username}`);
+  };
+
+  const handleWalletConnected = async () => {
+    if (!publicKey) return;
+
+    const walletAddress = publicKey.toString();
+    const shortAddress = walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
     
+    // Convert guest to wallet user or create new wallet user
+    const newUser: SimpleUser = {
+      id: walletAddress,
+      username: user?.isGuest ? user.username : `User${Math.floor(Math.random() * 1000)}`,
+      walletAddress,
+      publicKey: publicKey.toString(),
+      isGuest: false,
+      totalPosts: user?.totalPosts || 0,
+      joinedAt: user?.joinedAt || new Date().toLocaleDateString()
+    };
+
+    setUser(newUser);
+    saveSession(newUser);
+    console.log(`🔗 Wallet connected: ${shortAddress}`);
+  };
+
+  const connectWallet = async (): Promise<boolean> => {
+    setIsConnecting(true);
     try {
-      const walletAddress = publicKey.toString();
-      console.log('🔑 Attempting auto-login for wallet:', walletAddress);
-      
-      // Create or load profile
-      const profile = WalletAuthSystem.getOrCreateProfile(walletAddress, walletAddress);
-      
-      // Create session
-      WalletAuthSystem.createSession(walletAddress, walletAddress);
-      
-      // Set user state
-      setProfile(profile);
-      setUser({
-        id: profile.walletAddress, // Use wallet address as ID
-        username: profile.displayName, // Use displayName as username
-        walletAddress: profile.walletAddress,
-        publicKey: profile.publicKey,
-        displayName: profile.displayName,
-        totalPosts: profile.totalPosts,
-        totalStaked: profile.totalStaked,
-        reputation: profile.reputation,
-        networkTime: formatTime(profile.networkTime),
-        joinedAt: new Date(profile.joinedAt).toLocaleDateString()
-      });
-      
-      console.log(`✅ Wallet authenticated: ${profile.displayName}`);
-      
-      // Redirect to boards page after successful authentication
-      if (router.pathname === '/') {
-        router.push('/boards');
-      }
-      
+      await connect();
       return true;
-      
     } catch (error) {
-      console.error('Auto-login failed:', error);
+      console.error('Failed to connect wallet:', error);
       return false;
     } finally {
       setIsConnecting(false);
@@ -136,122 +114,86 @@ export function WalletAuthProvider({ children }: { children: React.ReactNode }) 
   };
 
   const login = async (): Promise<boolean> => {
-    if (!connected || !publicKey) {
-      console.warn('Wallet not connected during login attempt');
-      throw new Error('Please connect your wallet first');
+    // If no user exists, create guest account
+    if (!user) {
+      createGuestAccount();
+      return true;
     }
     
-    try {
-      const result = await handleAutoLogin();
-      if (!result) {
-        throw new Error('Login failed - please try reconnecting your wallet');
+    // If guest user, try to connect wallet
+    if (user.isGuest) {
+      return await connectWallet();
+    }
+    
+    return true;
+  };
+
+  const logout = () => {
+    if (user) {
+      console.log(`👋 Logging out: ${user.username}`);
+      
+      // Clear session
+      localStorage.removeItem('onusone-session');
+      
+      // Disconnect wallet if connected
+      if (connected) {
+        disconnect();
       }
-      return result;
-    } catch (error) {
-      console.error('Login error:', error);
-      setIsConnecting(false);
-      throw error;
+      
+      setUser(null);
+      router.push('/');
     }
   };
 
-  const handleLogout = () => {
-    WalletAuthSystem.clearSession();
-    setUser(null);
-    setProfile(null);
-    disconnect();
-    console.log('🚪 Wallet logged out');
+  const saveSession = (userData: SimpleUser) => {
+    const session = {
+      user: userData,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('onusone-session', JSON.stringify(session));
   };
 
   const addPost = (content: string, boardSlug: string) => {
-    if (!user || !connected) {
-      throw new Error('Authentication required - please connect your wallet first');
-    }
+    if (!user) return null;
     
-    if (!content || content.trim().length < 10) {
-      throw new Error('Post content must be at least 10 characters long');
-    }
+    // Update user stats
+    const updatedUser = { ...user, totalPosts: user.totalPosts + 1 };
+    setUser(updatedUser);
+    saveSession(updatedUser);
     
-    if (!boardSlug) {
-      throw new Error('Board selection required');
-    }
-    
-    try {
-      const post = WalletAuthSystem.addPost(content, boardSlug);
-      
-      // Update user state
-      const updatedProfile = WalletAuthSystem.getCurrentProfile();
-      if (updatedProfile) {
-        setProfile(updatedProfile);
-        setUser(prev => prev ? {
-          ...prev,
-          totalPosts: updatedProfile.totalPosts
-        } : null);
-      }
-      
-      console.log('📝 Post added successfully');
-      return post;
-    } catch (error) {
-      console.error('Error adding post:', error);
-      throw new Error(`Failed to create post: ${error.message}`);
-    }
-  };
-
-  const addStake = (postId: string, amount: number, txHash: string) => {
-    try {
-      WalletAuthSystem.addStake(postId, amount, txHash);
-      
-      // Update user state
-      const updatedProfile = WalletAuthSystem.getCurrentProfile();
-      if (updatedProfile) {
-        setProfile(updatedProfile);
-        setUser(prev => prev ? {
-          ...prev,
-          totalStaked: updatedProfile.totalStaked,
-          reputation: updatedProfile.reputation
-        } : null);
-      }
-      
-      console.log(`💰 Stake added: ${amount} ONU`);
-    } catch (error) {
-      console.error('Error adding stake:', error);
-      throw error;
-    }
-  };
-
-  const formatTime = (ms: number): string => {
-    const minutes = Math.floor(ms / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}d ${hours % 24}h`;
-    if (hours > 0) return `${hours}h ${minutes % 60}m`;
-    return `${minutes}m`;
-  };
-
-  const value: WalletAuthContextType = {
-    user,
-    profile,
-    isAuthenticated: !!user && connected,
-    isConnecting,
-    login,
-    logout: handleLogout,
-    addPost,
-    addStake
+    // Return post data for API call
+    return {
+      id: Date.now().toString(),
+      content,
+      author: user.username,
+      boardSlug,
+      timestamp: Date.now(),
+      isGuest: user.isGuest
+    };
   };
 
   return (
-    <WalletAuthContext.Provider value={value}>
+    <SimpleAuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
+      isConnecting,
+      isGuest: user?.isGuest || false,
+      canPost: !!user && (!!user.walletAddress || user.isGuest),
+      login,
+      logout,
+      createGuestAccount,
+      connectWallet,
+      addPost
+    }}>
       {children}
-    </WalletAuthContext.Provider>
+    </SimpleAuthContext.Provider>
   );
 }
 
 export function useWalletAuth() {
-  const context = useContext(WalletAuthContext);
+  const context = useContext(SimpleAuthContext);
   if (context === undefined) {
     throw new Error('useWalletAuth must be used within a WalletAuthProvider');
   }
   return context;
 }
-
-export default WalletAuthProvider;
