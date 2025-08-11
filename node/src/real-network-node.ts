@@ -5,11 +5,11 @@
 
 import { createLibp2p, Libp2p } from 'libp2p';
 import { tcp } from '@libp2p/tcp';
-import { websockets } from '@libp2p/websockets';
+import { webSockets } from '@libp2p/websockets';
 import { noise } from '@libp2p/noise';
 import { mplex } from '@libp2p/mplex';
 import { kadDHT } from '@libp2p/kad-dht';
-import { gossipsub } from '@libp2p/gossipsub';
+import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { identify } from '@libp2p/identify';
 import { ping } from '@libp2p/ping';
 import { bootstrap } from '@libp2p/bootstrap';
@@ -17,7 +17,7 @@ import { mdns } from '@libp2p/mdns';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import { EventEmitter } from 'events';
 import { PeerId } from '@libp2p/interface-peer-id';
-import { Multiaddr } from '@multiformats/multiaddr';
+import { multiaddr } from '@multiformats/multiaddr';
 import { MessageId } from '@libp2p/interface-pubsub';
 import { Logger } from './utils/logger';
 
@@ -88,13 +88,13 @@ export class OnusOneP2PNode extends EventEmitter {
         },
         transports: [
           tcp(),
-          websockets()
+          webSockets()
         ],
         connectionEncryption: [noise()],
         streamMuxers: [mplex()],
         peerDiscovery: [
           bootstrap({
-            list: this.config.bootstrapNodes.map(addr => new Multiaddr(addr))
+            list: this.config.bootstrapNodes.map(addr => multiaddr(addr))
           }),
           mdns(),
           pubsubPeerDiscovery({
@@ -352,7 +352,7 @@ export class OnusOneP2PNode extends EventEmitter {
 
   async connectToPeer(multiaddr: string): Promise<void> {
     try {
-      const addr = new Multiaddr(multiaddr);
+      const addr = multiaddr(multiaddr);
       await this.libp2p.dial(addr);
       this.logger.info(`Connected to peer: ${multiaddr}`);
     } catch (error) {
