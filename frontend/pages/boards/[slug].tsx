@@ -93,10 +93,17 @@ export default function BoardDetail() {
     }
 
     setBoard({ slug, ...boardConfig });
-    loadBoardMessages(slug);
+    
+    // Only load messages on client side
+    if (typeof window !== 'undefined') {
+      loadBoardMessages(slug);
+    }
   }, [slug, router]);
 
   const loadBoardMessages = async (boardSlug: string) => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     try {
       setLoadingMessages(true);
       console.log('🔄 Loading messages for board:', boardSlug);
@@ -186,6 +193,9 @@ export default function BoardDetail() {
 
   const handleSubmitMessage = async (content: string) => {
     if (!content.trim() || !user || !board || submitting) return;
+    
+    // Only run on client side
+    if (typeof window === 'undefined') return;
 
     setSubmitting(true);
     setShowSpaceLoader(true);

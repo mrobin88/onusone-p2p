@@ -30,7 +30,9 @@ export default function SpaceMessageLoader({ isVisible, message = "Message trave
       () => {
         setPhase(4); // Complete
         setTimeout(() => {
-          onComplete?.();
+          if (onComplete) {
+            onComplete();
+          }
         }, 500);
       }
     ];
@@ -45,7 +47,9 @@ export default function SpaceMessageLoader({ isVisible, message = "Message trave
       }
     }, 800);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, [isVisible, onComplete]);
 
   if (!isVisible) return null;
@@ -57,19 +61,19 @@ export default function SpaceMessageLoader({ isVisible, message = "Message trave
         {/* Robot Animation */}
         <div className={`text-center mb-6 transition-all duration-500 ${showRobot ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
           <div className="text-6xl mb-4 animate-bounce">
-            {phase === 0 && '🤖'}
-            {phase === 1 && '🚀'}
-            {phase === 2 && '⭐'}
-            {phase === 3 && '🌍'}
-            {phase === 4 && '✅'}
+            {phase === 0 ? '🤖' : 
+             phase === 1 ? '🚀' : 
+             phase === 2 ? '⭐' : 
+             phase === 3 ? '🌍' : 
+             phase === 4 ? '✅' : '🤖'}
           </div>
           
           <div className="text-2xl font-bold text-blue-400 mb-2">
-            {phase === 0 && 'Robot Activated'}
-            {phase === 1 && 'Launching Message'}
-            {phase === 2 && 'Traveling Through Space'}
-            {phase === 3 && 'Approaching Destination'}
-            {phase === 4 && 'Message Delivered!'}
+            {phase === 0 ? 'Robot Activated' : 
+             phase === 1 ? 'Launching Message' : 
+             phase === 2 ? 'Traveling Through Space' : 
+             phase === 3 ? 'Approaching Destination' : 
+             phase === 4 ? 'Message Delivered!' : 'Robot Activated'}
           </div>
         </div>
 
@@ -124,11 +128,11 @@ export default function SpaceMessageLoader({ isVisible, message = "Message trave
         <div className="text-center">
           <p className="text-blue-300 text-sm mb-2">{message}</p>
           <p className="text-gray-400 text-xs">
-            {phase === 0 && 'Initializing quantum communication...'}
-            {phase === 1 && 'Establishing secure connection...'}
-            {phase === 2 && 'Message traversing wormhole...'}
-            {phase === 3 && 'Decrypting at destination...'}
-            {phase === 4 && 'All systems operational!'}
+            {phase === 0 ? 'Initializing quantum communication...' : 
+             phase === 1 ? 'Establishing secure connection...' : 
+             phase === 2 ? 'Message traversing wormhole...' : 
+             phase === 3 ? 'Decrypting at destination...' : 
+             phase === 4 ? 'All systems operational!' : 'Initializing quantum communication...'}
           </p>
         </div>
 

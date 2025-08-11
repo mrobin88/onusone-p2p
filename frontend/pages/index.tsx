@@ -64,8 +64,8 @@ export default function Home() {
               OnusOne
             </h1>
             <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-              Enter the network.<br />
-              <span className="text-mysterious">Everything else is just noise.</span>
+              Simple messaging app.<br />
+              <span className="text-mysterious">Connect wallet. Post messages. That's it.</span>
             </p>
           </div>
 
@@ -106,9 +106,9 @@ export default function Home() {
             <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4">
               <span className="text-2xl">🔒</span>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Yours</h3>
+            <h3 className="text-xl font-semibold mb-3">Simple</h3>
             <p className="text-gray-300 leading-relaxed">
-              Your content. Your rules. No one else controls what you create.
+              Basic messaging. No complex features. Just post and read.
             </p>
           </div>
 
@@ -116,9 +116,9 @@ export default function Home() {
             <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-4">
               <span className="text-2xl">⚡</span>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Direct</h3>
+            <h3 className="text-xl font-semibold mb-3">Basic</h3>
             <p className="text-gray-300 leading-relaxed">
-              Peer to peer. No middlemen. Pure connection.
+              Simple backend. Messages saved locally. No fancy stuff.
             </p>
           </div>
 
@@ -126,9 +126,9 @@ export default function Home() {
             <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-4">
               <span className="text-2xl">🌐</span>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Network</h3>
+            <h3 className="text-xl font-semibold mb-3">Honest</h3>
             <p className="text-gray-300 leading-relaxed">
-              The network is the platform. You are the network.
+              No fake stats. No fake claims. Just messages.
             </p>
           </div>
         </div>
@@ -173,7 +173,7 @@ export default function Home() {
           <div className="text-center bg-gradient-to-r from-blue-500/10 to-purple-500/10 p-12 rounded-3xl border border-white/10">
             <h2 className="text-2xl font-bold mb-4">Ready?</h2>
             <p className="text-gray-300 mb-6">
-              The network awaits
+              Ready to post some messages?
             </p>
             <WalletMultiButton className="!bg-gradient-to-r !from-blue-600 !to-purple-600 hover:!from-blue-700 hover:!to-purple-700 !px-8 !py-4 !text-lg !rounded-xl" />
           </div>

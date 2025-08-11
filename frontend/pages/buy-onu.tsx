@@ -252,7 +252,7 @@ function BuyONUForm() {
                 </button>
 
                 <div className="text-xs text-gray-500 mt-3 text-center">
-                  Secure payment processed by Stripe. ONU tokens delivered instantly to your Solana wallet.
+                  Secure payment processed by Stripe. ONU tokens will be delivered to your Solana wallet.
                 </div>
               </div>
             </div>
@@ -321,7 +321,7 @@ function BuyONUForm() {
                 <div className="text-sm">
                   <div className="font-medium text-yellow-800 mb-1">💡 Pro Tip</div>
                   <div className="text-yellow-700">
-                    Buy $100+ to get bonus ONU tokens and run an edge node for passive income!
+                    Buy $100+ to get bonus ONU tokens for posting messages!
                   </div>
                 </div>
               </div>
