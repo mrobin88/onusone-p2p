@@ -15,6 +15,8 @@ import { useP2PConnection } from '../../hooks/useP2PConnection';
 import { loadMessages, saveMessages, appendMessage } from '../../lib/cache';
 import { WalletAuthSystem } from '../../lib/wallet-auth-system';
 import { apiClient, Message as APIMessage } from '../../lib/api-client';
+import SpaceMessageLoader from '../../components/SpaceMessageLoader';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 // Board configuration
 const BOARDS = {
@@ -62,6 +64,8 @@ export default function BoardDetail() {
   const [board, setBoard] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [showSpaceLoader, setShowSpaceLoader] = useState(false);
   const [stakingMessageId, setStakingMessageId] = useState<string | null>(null);
   const [replyModalOpen, setReplyModalOpen] = useState(false);
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null);
@@ -94,6 +98,7 @@ export default function BoardDetail() {
 
   const loadBoardMessages = async (boardSlug: string) => {
     try {
+      setLoadingMessages(true);
       console.log('🔄 Loading messages for board:', boardSlug);
       
       // Try to load from working backend first
@@ -122,6 +127,7 @@ export default function BoardDetail() {
           }));
           
           setMessages(convertedMessages);
+          setLoadingMessages(false);
           return;
         }
       } catch (apiError) {
@@ -173,6 +179,8 @@ export default function BoardDetail() {
 
     } catch (error) {
       console.error('Error loading messages:', error);
+    } finally {
+      setLoadingMessages(false);
     }
   };
 
@@ -180,6 +188,7 @@ export default function BoardDetail() {
     if (!content.trim() || !user || !board || submitting) return;
 
     setSubmitting(true);
+    setShowSpaceLoader(true);
     
     try {
       // Try to submit to working backend first
@@ -270,6 +279,7 @@ export default function BoardDetail() {
       alert('Failed to post message. Please try again.');
     } finally {
       setSubmitting(false);
+      setShowSpaceLoader(false);
     }
   };
 
@@ -444,6 +454,22 @@ export default function BoardDetail() {
           onReplySubmit={handleReplySubmit}
           boardSlug={slug as string}
         />
+      )}
+
+      {/* Space Message Loader */}
+      <SpaceMessageLoader
+        isVisible={showSpaceLoader}
+        message="Your message is traveling through the OnusOne network..."
+        onComplete={() => setShowSpaceLoader(false)}
+      />
+
+      {/* Loading Messages Spinner */}
+      {loadingMessages && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center">
+          <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl border border-white/20">
+            <LoadingSpinner size="lg" color="blue" text="Loading messages from space..." />
+          </div>
+        </div>
       )}
     </ScribeLayout>
   );

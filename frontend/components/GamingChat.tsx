@@ -134,9 +134,12 @@ export default function GamingChat({
                   className="submit-btn"
                 >
                   {submitting ? (
-                    <span className="loading-spinner">⏳</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>🚀 Launching...</span>
+                    </div>
                   ) : (
-                    'Send Message'
+                    '🚀 Send Message'
                   )}
                 </button>
               </div>
@@ -241,17 +244,17 @@ export default function GamingChat({
           </div>
         ) : (
           <div className="empty-state">
-            <div className="empty-icon">💬</div>
-            <h3 className="empty-title">No messages yet</h3>
+            <div className="empty-icon animate-bounce">🚀</div>
+            <h3 className="empty-title">Space is Empty</h3>
             <p className="empty-description">
-              Be the first to start the conversation in {boardName}
+              Be the first to launch a message into the {boardName} orbit
             </p>
             {isAuthenticated && (
               <button
                 onClick={() => setShowComposer(true)}
                 className="start-conversation-btn"
               >
-                Start Conversation
+                🚀 Launch First Message
               </button>
             )}
           </div>
