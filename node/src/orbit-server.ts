@@ -24,12 +24,15 @@ export class OrbitServer {
     try {
       this.logger.info('Starting OrbitDB Server...');
       
+      // Use environment port or default to 8889
+      const port = process.env.PORT ? parseInt(process.env.PORT) : 8889;
+      
       // Start the real-time API (this will also initialize OrbitMessaging)
-      await this.realtimeAPI.start(8889);
+      await this.realtimeAPI.start(port);
       
       this.isRunning = true;
       this.logger.info('OrbitDB Server started successfully');
-      this.logger.info('Real-time API running on port 8889');
+      this.logger.info(`Real-time API running on port ${port}`);
       this.logger.info('OrbitMessaging system initialized');
       
       // Set up graceful shutdown
