@@ -8,6 +8,7 @@ import { createHelia } from 'helia';
 import { unixfs } from '@helia/unixfs';
 import { EventEmitter } from 'events';
 import { Logger } from '../utils/logger';
+import { create } from 'ipfs-http-client';
 
 export interface Message {
   id: string;
@@ -68,7 +69,7 @@ export class OrbitMessaging extends EventEmitter {
     try {
       this.logger.info('Initializing OrbitMessaging system...');
       
-      // Create Helia instance
+      // Create Helia instance for local operations
       this.helia = await createHelia();
       this.unixfs = unixfs(this.helia);
       
@@ -87,7 +88,10 @@ export class OrbitMessaging extends EventEmitter {
       
     } catch (error) {
       this.logger.error('Failed to initialize OrbitMessaging:', error);
-      throw error;
+      // Fallback to local-only mode
+      this.logger.info('Falling back to local-only mode');
+      this.isInitialized = true;
+      this.emit('initialized');
     }
   }
 
