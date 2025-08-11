@@ -274,11 +274,10 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
             </nav>
           </div>
 
-          {/* Dancing Skeleton Section */}
+          {/* Skull Animation Section */}
           <div className="horse-track-border p-4 mt-6 text-center">
             <div className="dancing-skeleton text-4xl mb-2">💀</div>
-            <div className="text-green-400 text-sm font-bold">DANCING SKELETON</div>
-            <div className="text-green-300 text-xs">90s VIBES</div>
+            <div className="text-green-400 text-sm font-bold">tickels</div>
           </div>
         </aside>
 

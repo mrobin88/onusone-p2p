@@ -296,16 +296,15 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Dancing Skeletons Section */}
+        {/* Skull Animation Section */}
         <div className="text-center mb-16">
           <div className="horse-track-border p-8">
-            <h2 className="text-2xl font-bold mb-6 neon-glow text-green-400">💀 AUTHENTIC VIBES 💀</h2>
-            <div className="flex justify-center space-x-8 mb-6">
+            <div className="flex justify-center space-x-8 mb-4">
               <div className="dancing-skeleton text-6xl">💀</div>
               <div className="dancing-skeleton text-6xl" style={{animationDelay: '0.5s'}}>💀</div>
               <div className="dancing-skeleton text-6xl" style={{animationDelay: '1s'}}>💀</div>
             </div>
-            <p className="text-green-300 text-lg">90s internet vibes. Neo-noir aesthetic. Real style.</p>
+            <div className="text-green-400 text-xl font-bold">tickels</div>
           </div>
         </div>
 

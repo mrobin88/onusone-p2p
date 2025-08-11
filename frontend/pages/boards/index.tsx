@@ -225,17 +225,12 @@ export default function BoardsIndex() {
         {/* Bottom Section */}
         <div className="mt-16 text-center">
           <div className="horse-track-border p-8">
-            <h2 className="text-2xl font-bold mb-4 neon-glow text-green-400">
-              READY?
-            </h2>
-            <p className="text-green-300 mb-6">
-              Pick a board and start posting. The system works if messages stick.
-            </p>
-            <div className="flex justify-center space-x-4">
+            <div className="flex justify-center space-x-4 mb-4">
               <span className="dancing-skeleton text-4xl">💀</span>
               <span className="dancing-skeleton text-4xl" style={{animationDelay: '0.5s'}}>💀</span>
               <span className="dancing-skeleton text-4xl" style={{animationDelay: '1s'}}>💀</span>
             </div>
+            <div className="text-green-400 text-lg font-bold">tickels</div>
           </div>
         </div>
       </ScribeLayout>
