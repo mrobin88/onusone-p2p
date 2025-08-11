@@ -4,6 +4,7 @@
  */
 
 import { PublicKey } from '@solana/web3.js';
+import { P2P_CONFIG } from '../env.config';
 
 export interface EdgeNodeConfig {
   walletAddress: string;
@@ -49,19 +50,15 @@ export class EdgeNode {
   private websocket?: WebSocket;
   private messageHandlers: Map<string, (message: any) => void> = new Map();
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = P2P_CONFIG.RECONNECT_ATTEMPTS;
 
   constructor(walletAddress: string) {
     this.config = {
       walletAddress,
       nodeId: this.generateNodeId(),
-      bootstrapNodes: [
-        'http://localhost:8888',
-        'http://localhost:8889',
-        'http://localhost:8890'
-      ],
-      minStake: 100, // 100 ONU minimum stake
-      earningsRate: 0.4 // 40% of fees go to edge nodes
+      bootstrapNodes: P2P_CONFIG.BOOTSTRAP_NODES,
+      minStake: P2P_CONFIG.MIN_STAKE_ONU,
+      earningsRate: P2P_CONFIG.EARNINGS_RATE
     };
 
     this.status = {
@@ -236,10 +233,10 @@ export class EdgeNode {
           reject(error);
         };
         
-        // Wait for handshake response
+        // Wait for handshake response with configurable timeout
         const handshakeTimeout = setTimeout(() => {
           reject(new Error('Handshake timeout'));
-        }, 10000);
+        }, P2P_CONFIG.CONNECTION_TIMEOUT);
         
         // Set up handshake response handler
         this.messageHandlers.set('HANDSHAKE_ACK', (message) => {

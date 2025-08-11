@@ -14,6 +14,7 @@ import ReplyModal from '../../components/ReplyModal';
 import { useP2PConnection } from '../../hooks/useP2PConnection';
 import { loadMessages, saveMessages, appendMessage } from '../../lib/cache';
 import { WalletAuthSystem } from '../../lib/wallet-auth-system';
+import { apiClient, Message as APIMessage } from '../../lib/api-client';
 
 // Board configuration
 const BOARDS = {
@@ -95,7 +96,39 @@ export default function BoardDetail() {
     try {
       console.log('🔄 Loading messages for board:', boardSlug);
       
-      // Load from local cache first
+      // Try to load from working backend first
+      try {
+        const apiMessages = await apiClient.getBoardMessages(boardSlug);
+        if (apiMessages && apiMessages.length > 0) {
+          console.log('✅ Loaded messages from API:', apiMessages.length);
+          
+          // Convert API messages to local format
+          const convertedMessages: Message[] = apiMessages.map((msg: APIMessage) => ({
+            id: msg.id,
+            content: msg.content,
+            author: {
+              id: msg.author,
+              username: msg.author,
+              reputation: 0
+            },
+            boardSlug: msg.boardSlug,
+            createdAt: new Date(msg.timestamp).toISOString(),
+            decayScore: msg.decayScore || 100,
+            replies: 0,
+            engagements: 0,
+            isVisible: true,
+            stakeTotal: msg.stakeAmount || 0,
+            burnedTotal: 0
+          }));
+          
+          setMessages(convertedMessages);
+          return;
+        }
+      } catch (apiError) {
+        console.log('⚠️  API not available, falling back to cache');
+      }
+      
+      // Load from local cache as fallback
       const cached = await loadMessages(boardSlug);
       if (cached && cached.length > 0) {
         console.log('📋 Loaded', cached.length, 'cached messages');
@@ -149,7 +182,49 @@ export default function BoardDetail() {
     setSubmitting(true);
     
     try {
-      // Add post using wallet auth system
+      // Try to submit to working backend first
+      try {
+        const apiMessage = await apiClient.createMessage(
+          board.slug, 
+          content.trim(), 
+          user.displayName || user.walletAddress.slice(0, 8)
+        );
+        
+        console.log('✅ Message submitted to API:', apiMessage);
+        
+        // Convert API message to local format
+        const message: Message = {
+          id: apiMessage.id,
+          content: apiMessage.content,
+          author: {
+            id: user.walletAddress,
+            username: user.displayName || user.walletAddress.slice(0, 8),
+            reputation: user.reputation
+          },
+          boardSlug: apiMessage.boardSlug,
+          createdAt: new Date(apiMessage.timestamp).toISOString(),
+          decayScore: apiMessage.decayScore || 100,
+          replies: 0,
+          engagements: 0,
+          isVisible: true,
+          stakeTotal: apiMessage.stakeAmount || 0,
+          burnedTotal: 0,
+        };
+        
+        // Add to local state and cache
+        const updatedMessages = [message, ...messages];
+        setMessages(updatedMessages);
+        console.log("🔄 UI updated with", updatedMessages.length, "messages");
+        await appendMessage(board.slug, message);
+        
+        console.log(`✅ Message posted to ${board.name} via API`);
+        return;
+        
+      } catch (apiError) {
+        console.log('⚠️  API submission failed, falling back to local storage');
+      }
+      
+      // Fallback to local storage
       const walletPost = addPost(content.trim(), board.slug);
       
       const message: Message = {
@@ -188,7 +263,7 @@ export default function BoardDetail() {
         });
       }
       
-      console.log(`✅ Message posted to ${board.name}`);
+      console.log(`✅ Message posted to ${board.name} locally`);
       
     } catch (error) {
       console.error('Error posting message:', error);

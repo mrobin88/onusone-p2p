@@ -20,6 +20,41 @@ export const ONU_CONFIG = {
   CLOSE_THRESHOLD: 15, // Content closes below 15 points
 };
 
+// P2P Network Configuration
+export const P2P_CONFIG = {
+  // Backend node URLs - will be overridden by environment variables
+  BOOTSTRAP_NODES: [
+    process.env.NEXT_PUBLIC_P2P_BACKEND_URL || 'http://localhost:8888',
+    process.env.NEXT_PUBLIC_P2P_BACKEND_URL_2 || 'http://localhost:8889',
+    process.env.NEXT_PUBLIC_P2P_BACKEND_URL_3 || 'http://localhost:8890'
+  ],
+
+  // WebSocket endpoints
+  WEBSOCKET_ENDPOINTS: [
+    (process.env.NEXT_PUBLIC_P2P_BACKEND_URL || 'http://localhost:8888').replace('http://', 'ws://').replace('https://', 'wss://'),
+    (process.env.NEXT_PUBLIC_P2P_BACKEND_URL_2 || 'http://localhost:8889').replace('http://', 'ws://').replace('https://', 'wss://'),
+    (process.env.NEXT_PUBLIC_P2P_BACKEND_URL_3 || 'http://localhost:8890').replace('http://', 'ws://').replace('https://', 'wss://')
+  ],
+
+  // API endpoints for the working backend
+  API_ENDPOINTS: {
+    BOARDS: '/api/boards',
+    MESSAGES: '/api/boards/:slug/messages',
+    USERS: '/api/users/:username',
+    HEALTH: '/health',
+    TEST: '/api/test'
+  },
+  
+  // Connection settings
+  CONNECTION_TIMEOUT: 10000,
+  RECONNECT_ATTEMPTS: 5,
+  HEARTBEAT_INTERVAL: 30000,
+  
+  // Node requirements
+  MIN_STAKE_ONU: 100,
+  EARNINGS_RATE: 0.4, // 40% of fees go to edge nodes
+};
+
 // Treasury Configuration
 export const TREASURY_CONFIG = {
   ADDRESS: 'G3UL7e6JoWgNBxMuzCNRYesPSB35WR4zbBwaMUYNqNmM',
