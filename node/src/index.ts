@@ -1,31 +1,13 @@
 /**
- * OnusOne P2P Node - Simplified Version
- * Handles HTTP API server and basic functionality
+ * OnusOne P2P Node - Main Entry Point
+ * Handles HTTP API server and P2P network management
  */
 
 import express from 'express';
 import cors from 'cors';
 import { CronJob } from 'cron';
 import dotenv from 'dotenv';
-
-// Simple types for now
-interface Message {
-  id: string;
-  content: string;
-  author: string;
-  boardType: string;
-  timestamp: number;
-  score: number;
-  decayRate: number;
-}
-
-enum BoardType {
-  GENERAL = 'GENERAL',
-  TECH = 'TECH',
-  POLITICS = 'POLITICS',
-  SCIENCE = 'SCIENCE'
-}
-
+import { OnusOneP2PNode, P2PMessage } from './real-network-node';
 import { MessageStore } from './storage/messageStore';
 import { Logger } from './utils/logger';
 import { NetworkMetrics } from './utils/metrics';
@@ -33,9 +15,10 @@ import { NetworkMetrics } from './utils/metrics';
 dotenv.config();
 
 /**
- * OnusOne P2P Node (Simplified)
+ * OnusOne P2P Node Server
  */
-export class OnusOneNode {
+export class OnusOneNodeServer {
+  private p2pNode: OnusOneP2PNode;
   private messageStore: MessageStore;
   private logger: Logger;
   private metrics: NetworkMetrics;
@@ -43,16 +26,26 @@ export class OnusOneNode {
   private server: any;
   private healthCheckJob!: CronJob;
   private nodeId: string;
+  private isRunning: boolean = false;
 
   constructor() {
     this.messageStore = new MessageStore();
-    this.logger = new Logger('OnusOneNode');
+    this.logger = new Logger('OnusOneNodeServer');
     this.metrics = new NetworkMetrics();
     this.app = express();
-    this.nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
+    this.nodeId = `server-${Math.random().toString(36).substr(2, 9)}`;
     
+    // Initialize P2P node
+    this.p2pNode = new OnusOneP2PNode({
+      port: parseInt(process.env.NODE_PORT || '8888'),
+      bootstrapNodes: process.env.BOOTSTRAP_NODES?.split(',') || [],
+      enableRelay: process.env.ENABLE_RELAY === 'true',
+      enableStorage: process.env.ENABLE_IPFS === 'true'
+    });
+
     this.setupMiddleware();
     this.setupRoutes();
+    this.setupP2PEventHandlers();
     this.setupHealthCheck();
   }
 
@@ -60,6 +53,33 @@ export class OnusOneNode {
     this.app.use(cors());
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
+  }
+
+  private setupP2PEventHandlers() {
+    this.p2pNode.on('node:started', () => {
+      this.logger.info('P2P node started successfully');
+    });
+
+    this.p2pNode.on('peer:connected', (peerId: string) => {
+      this.logger.info(`Peer connected: ${peerId}`);
+    });
+
+    this.p2pNode.on('peer:disconnected', (peerId: string) => {
+      this.logger.info(`Peer disconnected: ${peerId}`);
+    });
+
+    this.p2pNode.on('message:received', (message: P2PMessage) => {
+      this.logger.info(`Message received: ${message.type} from ${message.author}`);
+      this.messageStore.addMessage(message);
+    });
+
+    this.p2pNode.on('message:published', (message: P2PMessage) => {
+      this.logger.info(`Message published: ${message.type}`);
+    });
+
+    this.p2pNode.on('health:updated', (metrics: any) => {
+      this.metrics.updateFromP2P(metrics);
+    });
   }
 
   private setupRoutes() {
@@ -70,247 +90,334 @@ export class OnusOneNode {
         nodeId: this.nodeId,
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        connectedPeers: this.getConnectedPeersCount(),
-        networkHealth: 'excellent'
+        p2pStatus: this.p2pNode ? 'running' : 'stopped',
+        networkHealth: this.metrics.getNetworkHealth()
       });
     });
 
-    // Network status endpoint for P2P client
-    this.app.get('/api/status', (req, res) => {
-      res.json({
-        nodeId: this.nodeId,
-        connectedPeers: this.getConnectedPeersCount(),
-        networkHealth: 'excellent',
-        uptime: process.uptime(),
-        messagesSynced: this.messageStore.getMessageCount(),
-        storageUsed: this.getStorageUsed(),
-        isBootstrap: process.env.NODE_ENV === 'bootstrap'
-      });
+    // P2P Network Status
+    this.app.get('/api/status', async (req, res) => {
+      try {
+        const p2pMetrics = await this.p2pNode.getMetrics();
+        const peers = await this.p2pNode.getPeers();
+        
+        res.json({
+          nodeId: this.nodeId,
+          p2pStatus: this.isRunning ? 'running' : 'stopped',
+          connectedPeers: p2pMetrics.connectedPeers,
+          totalPeers: p2pMetrics.totalPeers,
+          networkHealth: p2pMetrics.networkHealth,
+          uptime: p2pMetrics.uptime,
+          messagesProcessed: p2pMetrics.messagesProcessed,
+          storageUsed: p2pMetrics.storageUsed,
+          isBootstrap: process.env.NODE_ENV === 'bootstrap'
+        });
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to get status' });
+      }
     });
 
     // Get connected peers
-    this.app.get('/api/peers', (req, res) => {
-      res.json(this.getConnectedPeers());
+    this.app.get('/api/peers', async (req, res) => {
+      try {
+        const peers = await this.p2pNode.getPeers();
+        res.json(peers);
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to get peers' });
+      }
+    });
+
+    // Get network topology
+    this.app.get('/api/topology', async (req, res) => {
+      try {
+        const topology = await this.p2pNode.getNetworkTopology();
+        res.json(topology);
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to get topology' });
+      }
     });
 
     // Broadcast message to network
     this.app.post('/api/broadcast', async (req, res) => {
       try {
-        const message = req.body;
+        const { type, content, boardType, stakeAmount, engagementScore } = req.body;
         
-        if (!message || !message.type || !message.content) {
-          return res.status(400).json({ error: 'Invalid message format' });
+        if (!type || !content) {
+          return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Store message locally
-        await this.messageStore.storeMessage(message);
+        const message: P2PMessage = {
+          id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: type as any,
+          content,
+          author: req.headers['x-user-id'] as string || 'anonymous',
+          timestamp: Date.now(),
+          boardType,
+          stakeAmount,
+          engagementScore
+        };
+
+        // Publish to P2P network
+        await this.p2pNode.publishMessage(message);
         
-        // TODO: Broadcast to actual P2P network when implemented
-        this.logger.info(`Broadcasting message: ${message.id}`);
+        // Store locally
+        this.messageStore.addMessage(message);
         
-        // For now, just acknowledge receipt
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           messageId: message.id,
-          broadcastTo: this.getConnectedPeersCount()
+          timestamp: message.timestamp
         });
-        
       } catch (error) {
         this.logger.error('Broadcast failed:', error);
-        res.status(500).json({ error: 'Broadcast failed' });
-      }
-    });
-
-    // Subscribe to board updates
-    this.app.post('/api/subscribe', (req, res) => {
-      const { board, userId } = req.body;
-      
-      if (!board || !userId) {
-        return res.status(400).json({ error: 'Board and userId are required' });
-      }
-
-      // TODO: Implement actual subscription when P2P is fully connected
-      this.logger.info(`User ${userId} subscribed to board ${board}`);
-      
-      res.json({ 
-        success: true, 
-        board, 
-        userId,
-        message: 'Subscribed to board updates'
-      });
-    });
-
-    // Get recent messages for HTTP polling fallback
-    this.app.get('/api/messages/recent', async (req, res) => {
-      try {
-        const since = req.query.since ? new Date(req.query.since as string) : new Date(Date.now() - 300000); // Last 5 minutes
-        const messages = await this.messageStore.getRecentMessages(since);
-        res.json(messages);
-      } catch (error) {
-        this.logger.error('Failed to get recent messages:', error);
-        res.status(500).json({ error: 'Failed to get recent messages' });
+        res.status(500).json({ error: 'Failed to broadcast message' });
       }
     });
 
     // Get messages
     this.app.get('/api/messages', async (req, res) => {
       try {
-        const messages = await this.messageStore.getMessages();
-        res.json({ messages });
+        const { board, limit = 50, offset = 0 } = req.query;
+        
+        let messages = await this.p2pNode.getMessages();
+        
+        // Filter by board if specified
+        if (board) {
+          messages = messages.filter(msg => msg.boardType === board);
+        }
+        
+        // Sort by timestamp (newest first)
+        messages.sort((a, b) => b.timestamp - a.timestamp);
+        
+        // Apply pagination
+        const paginatedMessages = messages.slice(offset as number, (offset as number) + (limit as number));
+        
+        res.json({
+          messages: paginatedMessages,
+          total: messages.length,
+          limit: limit as number,
+          offset: offset as number
+        });
       } catch (error) {
-        this.logger.error('Failed to get messages:', error);
         res.status(500).json({ error: 'Failed to get messages' });
       }
     });
 
-    // Post message
-    this.app.post('/api/messages', async (req, res) => {
+    // Find specific content
+    this.app.get('/api/content/:contentId', async (req, res) => {
       try {
-        const { content, author, boardType = BoardType.GENERAL } = req.body;
+        const { contentId } = req.params;
+        const content = await this.p2pNode.findContent(contentId);
         
-        if (!content || !author) {
-          return res.status(400).json({ error: 'Content and author are required' });
+        if (content) {
+          res.json(content);
+        } else {
+          res.status(404).json({ error: 'Content not found' });
         }
-
-        const message: Message = {
-          id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          content,
-          author,
-          boardType,
-          timestamp: Date.now(),
-          score: 0,
-          decayRate: 0.1
-        };
-
-        await this.messageStore.addMessage(message);
-        this.logger.info(`Message posted: ${message.id}`);
-        
-        res.json({ message: 'Message posted successfully', messageId: message.id });
       } catch (error) {
-        this.logger.error('Failed to post message:', error);
-        res.status(500).json({ error: 'Failed to post message' });
+        res.status(500).json({ error: 'Failed to find content' });
       }
     });
 
-    // Get node info
-    this.app.get('/api/node', (req, res) => {
-      res.json({
-        nodeId: this.nodeId,
-        status: 'running',
-        version: '0.1.0',
-        timestamp: new Date().toISOString()
-      });
+    // Node management
+    this.app.post('/api/node/start', async (req, res) => {
+      try {
+        if (this.isRunning) {
+          return res.json({ message: 'Node already running' });
+        }
+        
+        await this.p2pNode.start();
+        this.isRunning = true;
+        
+        res.json({ message: 'Node started successfully' });
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to start node' });
+      }
+    });
+
+    this.app.post('/api/node/stop', async (req, res) => {
+      try {
+        if (!this.isRunning) {
+          return res.json({ message: 'Node already stopped' });
+        }
+        
+        await this.p2pNode.stop();
+        this.isRunning = false;
+        
+        res.json({ message: 'Node stopped successfully' });
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to stop node' });
+      }
+    });
+
+    this.app.post('/api/node/relay', async (req, res) => {
+      try {
+        await this.p2pNode.enableRelay();
+        res.json({ message: 'Relay mode enabled' });
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to enable relay' });
+      }
+    });
+
+    // Storage operations
+    this.app.post('/api/storage/store', async (req, res) => {
+      try {
+        const { content } = req.body;
+        
+        if (!content) {
+          return res.status(400).json({ error: 'Missing content' });
+        }
+
+        const contentId = await this.p2pNode.storeContent(content);
+        
+        res.json({
+          success: true,
+          contentId,
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to store content' });
+      }
+    });
+
+    // Metrics and analytics
+    this.app.get('/api/metrics', async (req, res) => {
+      try {
+        const p2pMetrics = await this.p2pNode.getMetrics();
+        const localMetrics = this.metrics.getMetrics();
+        
+        res.json({
+          p2p: p2pMetrics,
+          local: localMetrics,
+          combined: {
+            totalPeers: p2pMetrics.totalPeers,
+            connectedPeers: p2pMetrics.connectedPeers,
+            networkHealth: p2pMetrics.networkHealth,
+            messagesProcessed: p2pMetrics.messagesProcessed + localMetrics.messagesProcessed,
+            storageUsed: p2pMetrics.storageUsed + localMetrics.storageUsed,
+            uptime: Math.max(p2pMetrics.uptime, localMetrics.uptime)
+          }
+        });
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to get metrics' });
+      }
+    });
+
+    // WebSocket endpoint for real-time updates
+    this.app.get('/api/ws', (req, res) => {
+      // Upgrade to WebSocket connection
+      // This would be implemented with ws or socket.io
+      res.json({ message: 'WebSocket endpoint - use ws:// protocol' });
     });
   }
 
   private setupHealthCheck() {
-    this.healthCheckJob = new CronJob('*/30 * * * * *', () => {
-      this.logger.info('Health check - Node is running');
-      this.metrics.recordHealthCheck();
+    this.healthCheckJob = new CronJob('*/30 * * * * *', async () => {
+      try {
+        if (this.isRunning) {
+          const metrics = await this.p2pNode.getMetrics();
+          this.logger.info('Health check passed', {
+            peers: metrics.connectedPeers,
+            health: metrics.networkHealth,
+            uptime: metrics.uptime
+          });
+        }
+      } catch (error) {
+        this.logger.error('Health check failed:', error);
+      }
     });
   }
 
   async start(port: number = 8888) {
     try {
+      // Start P2P node first
+      await this.p2pNode.start();
+      this.isRunning = true;
+      
+      // Start HTTP server
       this.server = this.app.listen(port, () => {
-        this.logger.info(`OnusOne P2P Node started on port ${port}`);
-        this.logger.info(`Node ID: ${this.nodeId}`);
-        this.logger.info(`Health check: http://localhost:${port}/health`);
+        this.logger.info(`HTTP server started on port ${port}`);
       });
 
+      // Start health checks
       this.healthCheckJob.start();
-      this.logger.info('Health check job started');
-
+      
+      this.logger.info(`OnusOne Node Server started successfully`);
+      this.logger.info(`HTTP API: http://localhost:${port}`);
+      this.logger.info(`P2P Node: ${this.nodeId}`);
+      
     } catch (error) {
-      this.logger.error('Failed to start node:', error);
+      this.logger.error('Failed to start server:', error);
       throw error;
     }
   }
 
   async stop() {
     try {
-      if (this.server) {
-        this.server.close();
-        this.logger.info('Node stopped');
-      }
-      
+      // Stop health checks
       if (this.healthCheckJob) {
         this.healthCheckJob.stop();
-        this.logger.info('Health check job stopped');
       }
+
+      // Stop HTTP server
+      if (this.server) {
+        this.server.close();
+      }
+
+      // Stop P2P node
+      if (this.isRunning) {
+        await this.p2pNode.stop();
+        this.isRunning = false;
+      }
+
+      this.logger.info('OnusOne Node Server stopped successfully');
     } catch (error) {
-      this.logger.error('Error stopping node:', error);
+      this.logger.error('Failed to stop server:', error);
+      throw error;
     }
   }
 
-  // Helper methods for P2P functionality
+  // Utility methods
   private getConnectedPeersCount(): number {
-    // TODO: Return actual peer count when P2P networking is implemented
-    // For now, simulate connected peers based on uptime and activity
-    const baseCount = 5;
-    const uptimeBonus = Math.min(Math.floor(process.uptime() / 60), 15); // +1 peer per minute, max 15
-    const randomVariation = Math.floor(Math.random() * 8) - 4; // ±4 random
-    return Math.max(1, baseCount + uptimeBonus + randomVariation);
+    return this.metrics.getConnectedPeers();
   }
 
   private getConnectedPeers(): any[] {
-    // TODO: Return actual peer list when P2P networking is implemented
-    // For now, simulate realistic peer data
-    const peerCount = this.getConnectedPeersCount();
-    const peers = [];
-    
-    for (let i = 0; i < peerCount; i++) {
-      const peerId = `12D3KooW${Math.random().toString(36).substr(2, 44).toUpperCase()}`;
-      const ipBase = Math.floor(Math.random() * 255);
-      const reputation = 20 + Math.floor(Math.random() * 80); // 20-100 reputation
-      
-      peers.push({
-        id: peerId,
-        multiaddr: `/ip4/192.168.1.${ipBase}/tcp/8887/p2p/${peerId}`,
-        isConnected: true,
-        reputation,
-        lastSeen: new Date(Date.now() - Math.random() * 300000).toISOString(), // Within last 5 minutes
-        userAgent: `OnusOne/0.1.0-${Math.random() > 0.7 ? 'node' : 'browser'}`,
-        location: ['US', 'EU', 'AS', 'SA'][Math.floor(Math.random() * 4)]
-      });
-    }
-    
-    return peers.sort((a, b) => b.reputation - a.reputation);
+    return this.metrics.getPeers();
   }
 
   private getStorageUsed(): number {
-    // TODO: Return actual storage usage when implemented
-    // For now, simulate realistic storage usage that grows over time
-    const baseStorage = 50; // 50 MB base
-    const timeBasedGrowth = Math.floor(process.uptime() / 60) * 0.5; // 0.5 MB per minute
-    const messageStorage = (this.messageStore.getMessageCount() || 0) * 0.001; // 1KB per message
-    const randomVariation = Math.random() * 10; // ±10 MB variation
-    
-    return Math.round(baseStorage + timeBasedGrowth + messageStorage + randomVariation);
+    return this.metrics.getStorageUsed();
   }
 }
 
-// Main function
+// Main execution
 async function main() {
-  const node = new OnusOneNode();
+  const nodeServer = new OnusOneNodeServer();
   
   // Handle graceful shutdown
   process.on('SIGINT', async () => {
-    console.log('\nShutting down gracefully...');
-    await node.stop();
+    console.log('\nReceived SIGINT, shutting down gracefully...');
+    await nodeServer.stop();
     process.exit(0);
   });
 
   process.on('SIGTERM', async () => {
-    console.log('\nShutting down gracefully...');
-    await node.stop();
+    console.log('\nReceived SIGTERM, shutting down gracefully...');
+    await nodeServer.stop();
     process.exit(0);
   });
 
-  await node.start();
+  try {
+    const port = parseInt(process.env.NODE_PORT || '8888');
+    await nodeServer.start(port);
+  } catch (error) {
+    console.error('Failed to start node server:', error);
+    process.exit(1);
+  }
 }
 
-// Run if this is the main module
+// Run if this file is executed directly
 if (require.main === module) {
-  main().catch(console.error);
+  main();
 }

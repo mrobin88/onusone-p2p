@@ -1,0 +1,380 @@
+{
+  "address": "G3UL7e6JoWgNBxMuzCNRYesPSB35WR4zbBwaMUYNqNmM",
+  "metadata": {
+    "name": "onusone_p2p",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "OnusOne P2P Solana Program"
+  },
+  "instructions": [
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "onu_mint",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "treasury_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "treasury"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "onu_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "_initial_supply",
+          "type": "u64"
+        },
+        {
+          "name": "decay_rate",
+          "type": "u64"
+        },
+        {
+          "name": "min_stake",
+          "type": "u64"
+        },
+        {
+          "name": "max_stake",
+          "type": "u64"
+        },
+        {
+          "name": "daily_user_limit",
+          "type": "u64"
+        },
+        {
+          "name": "total_user_limit",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "stake_tokens",
+      "discriminator": [
+        136,
+        126,
+        91,
+        162,
+        40,
+        131,
+        13,
+        127
+      ],
+      "accounts": [
+        {
+          "name": "stake_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "content_id",
+          "type": "string"
+        },
+        {
+          "name": "content_type",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ProgramState",
+      "discriminator": [
+        77,
+        209,
+        137,
+        229,
+        149,
+        67,
+        167,
+        230
+      ]
+    },
+    {
+      "name": "StakeAccount",
+      "discriminator": [
+        80,
+        158,
+        67,
+        124,
+        50,
+        189,
+        192,
+        255
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "ProgramState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "onu_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "decay_rate",
+            "type": "u64"
+          },
+          {
+            "name": "min_stake",
+            "type": "u64"
+          },
+          {
+            "name": "max_stake",
+            "type": "u64"
+          },
+          {
+            "name": "daily_user_limit",
+            "type": "u64"
+          },
+          {
+            "name": "total_user_limit",
+            "type": "u64"
+          },
+          {
+            "name": "total_staked",
+            "type": "u64"
+          },
+          {
+            "name": "total_rewards_paid",
+            "type": "u64"
+          },
+          {
+            "name": "emergency_controls_active",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StakeAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "content_id",
+            "type": "string"
+          },
+          {
+            "name": "content_type",
+            "type": "string"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "staked_at",
+            "type": "i64"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
