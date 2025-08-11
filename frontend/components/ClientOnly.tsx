@@ -7,21 +7,14 @@ interface ClientOnlyProps {
 
 export default function ClientOnly({ children, fallback = null }: ClientOnlyProps) {
   const [hasMounted, setHasMounted] = useState(false);
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
-    
-    // Wait for next tick to ensure DOM is fully ready
-    const timer = setTimeout(() => {
-      setIsReady(true);
-    }, 0);
-    
-    return () => clearTimeout(timer);
   }, []);
 
-  if (!hasMounted || !isReady) {
-    return <>{fallback}</>;
+  // Always render the same structure to prevent hook order issues
+  if (!hasMounted) {
+    return <div style={{ visibility: 'hidden' }}>{children}</div>;
   }
 
   return <>{children}</>;

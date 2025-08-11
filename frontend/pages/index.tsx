@@ -26,30 +26,32 @@ export default function Home() {
       <PresenceBeacon />
       
       {/* Clean Header */}
-      {isAuthenticated && (
-        <header className="bg-white/5 backdrop-blur-sm border-b border-white/10 p-4">
-          <div className="container mx-auto flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">O</span>
+      <div>
+        {isAuthenticated && (
+          <header className="bg-white/5 backdrop-blur-sm border-b border-white/10 p-4">
+            <div className="container mx-auto flex justify-between items-center">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">O</span>
+                </div>
+                <h1 className="text-xl font-semibold">OnusOne</h1>
               </div>
-              <h1 className="text-xl font-semibold">OnusOne</h1>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-300">
+                  {user?.displayName || 'User'}
+                </span>
+                <Button 
+                  onClick={handleLogout}
+                  variant="secondary"
+                  size="sm"
+                >
+                  Exit
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-300">
-                {user?.displayName || 'User'}
-              </span>
-              <Button 
-                onClick={handleLogout}
-                variant="secondary"
-                size="sm"
-              >
-                Exit
-              </Button>
-            </div>
-          </div>
-        </header>
-      )}
+          </header>
+        )}
+      </div>
 
       <main className="container mx-auto px-4 py-16">
         {/* Hero Section */}
@@ -69,30 +71,32 @@ export default function Home() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            {isAuthenticated ? (
-              <>
-                <Button 
-                  onClick={() => router.push('/boards')}
-                  className="px-8 py-4 text-lg"
-                >
-                  Enter
-                </Button>
-                <Button 
-                  onClick={() => router.push('/topics')}
-                  variant="secondary"
-                  className="px-8 py-4 text-lg"
-                >
-                  Explore
-                </Button>
-              </>
-            ) : (
-              <div className="space-y-4">
-                <WalletMultiButton className="!bg-gradient-to-r !from-blue-600 !to-purple-600 hover:!from-blue-700 hover:!to-purple-700 !px-8 !py-4 !text-lg !rounded-xl" />
-                <p className="text-sm text-gray-400">
-                  Connect to enter
-                </p>
-              </div>
-            )}
+            <div className="space-y-4">
+              {isAuthenticated ? (
+                <>
+                  <Button 
+                    onClick={() => router.push('/boards')}
+                    className="px-8 py-4 text-lg"
+                  >
+                    Enter
+                  </Button>
+                  <Button 
+                    onClick={() => router.push('/topics')}
+                    variant="secondary"
+                    className="px-8 py-4 text-lg"
+                  >
+                    Explore
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <WalletMultiButton className="!bg-gradient-to-r !from-blue-600 !to-purple-600 hover:!from-blue-700 hover:!to-purple-700 !px-8 !py-4 !text-lg !rounded-xl" />
+                  <p className="text-sm text-gray-400">
+                    Connect to enter
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
