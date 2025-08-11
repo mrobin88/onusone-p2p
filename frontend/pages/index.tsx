@@ -79,12 +79,15 @@ export default function Home() {
           transition: all 0.3s ease;
           padding: 12px 24px;
           border-radius: 8px;
+          animation: breathing 3.5s ease-in-out infinite;
+          transform-origin: center;
         }
         
         .casino-button:hover {
           background: linear-gradient(45deg, #00cc00, #00ff00);
           box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
-          transform: translateY(-2px);
+          transform: translateY(-2px) scale(1.02);
+          animation: breathing-hover 3.5s ease-in-out infinite;
         }
         
         .guest-button {
@@ -97,12 +100,37 @@ export default function Home() {
           transition: all 0.3s ease;
           padding: 12px 24px;
           border-radius: 8px;
+          animation: breathing 3.5s ease-in-out infinite;
+          transform-origin: center;
         }
         
         .guest-button:hover {
           background: linear-gradient(45deg, #cc5500, #ff6600);
           box-shadow: 0 0 20px rgba(255, 102, 0, 0.8);
-          transform: translateY(-2px);
+          transform: translateY(-2px) scale(1.02);
+          animation: breathing-hover 3.5s ease-in-out infinite;
+        }
+        
+        @keyframes breathing {
+          0%, 100% { 
+            transform: scale(1);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+          }
+          50% { 
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+          }
+        }
+        
+        @keyframes breathing-hover {
+          0%, 100% { 
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+          }
+          50% { 
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 0 25px rgba(0, 255, 0, 1);
+          }
         }
         
         .checkered-pattern {
@@ -162,7 +190,7 @@ export default function Home() {
               <span className="text-black font-bold text-3xl">🏇</span>
             </div>
             <h1 className="text-5xl font-bold mb-6 neon-glow text-green-400">
-              🏇 ONUSONE 🏇
+              ONUSONE
             </h1>
             <p className="text-xl text-green-300 mb-8 leading-relaxed">
               Simple messaging app.<br />
@@ -179,14 +207,14 @@ export default function Home() {
                     onClick={() => router.push('/boards')}
                     className="casino-button text-lg"
                   >
-                    🏁 ENTER RACE TRACK
+                    ENTER
                   </Button>
                   <Button 
                     onClick={() => router.push('/topics')}
                     variant="secondary"
                     className="guest-button text-lg"
                   >
-                    🎰 EXPLORE CASINO
+                    EXPLORE
                   </Button>
                 </>
               ) : (
@@ -221,7 +249,7 @@ export default function Home() {
             </div>
             <h3 className="text-xl font-semibold mb-3 text-green-400">Neo-Noir</h3>
             <p className="text-green-300 leading-relaxed">
-              90s cyberpunk vibes. Dark themes. Green terminals. Dancing skeletons.
+              90s cyberpunk vibes. Dark themes. Green terminals. Authentic aesthetic.
             </p>
           </div>
           
@@ -229,9 +257,9 @@ export default function Home() {
             <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-4 mx-auto">
               <span className="text-2xl">🏇</span>
             </div>
-            <h3 className="text-xl font-semibold mb-3 text-green-400">Horse Track</h3>
+            <h3 className="text-xl font-semibold mb-3 text-green-400">Style</h3>
             <p className="text-green-300 leading-relaxed">
-              Checkered patterns. Race track borders. Casino feels. Old school cool.
+              Checkered patterns. Clean borders. Authentic feels. Old school cool.
             </p>
           </div>
           
@@ -262,8 +290,8 @@ export default function Home() {
             </div>
             <div className="horse-track-border p-6">
               <div className="text-4xl mb-4">🏇</div>
-              <h3 className="text-xl font-semibold mb-3 text-green-400">3. Race</h3>
-              <p className="text-green-300">Navigate boards. Explore topics. Win the race.</p>
+                          <h3 className="text-xl font-semibold mb-3 text-green-400">3. Navigate</h3>
+            <p className="text-green-300">Browse boards. Explore topics. Find your space.</p>
             </div>
           </div>
         </div>
@@ -271,22 +299,22 @@ export default function Home() {
         {/* Dancing Skeletons Section */}
         <div className="text-center mb-16">
           <div className="horse-track-border p-8">
-            <h2 className="text-2xl font-bold mb-6 neon-glow text-green-400">💀 DANCING SKELETONS 💀</h2>
+            <h2 className="text-2xl font-bold mb-6 neon-glow text-green-400">💀 AUTHENTIC VIBES 💀</h2>
             <div className="flex justify-center space-x-8 mb-6">
               <div className="dancing-skeleton text-6xl">💀</div>
               <div className="dancing-skeleton text-6xl" style={{animationDelay: '0.5s'}}>💀</div>
               <div className="dancing-skeleton text-6xl" style={{animationDelay: '1s'}}>💀</div>
             </div>
-            <p className="text-green-300 text-lg">90s internet vibes. Neo-noir aesthetic. Pure swagger.</p>
+            <p className="text-green-300 text-lg">90s internet vibes. Neo-noir aesthetic. Real style.</p>
           </div>
         </div>
 
         {/* Final CTA */}
         {!isAuthenticated && (
           <div className="text-center horse-track-border p-12">
-            <h2 className="text-2xl font-bold mb-4 neon-glow text-green-400">🎭 READY TO RACE? 🎭</h2>
+            <h2 className="text-2xl font-bold mb-4 neon-glow text-green-400">READY?</h2>
             <p className="text-green-300 mb-6">
-              Enter the neo-noir world of OnusOne
+              Enter the world of OnusOne
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <WalletMultiButton className="casino-button text-lg" />

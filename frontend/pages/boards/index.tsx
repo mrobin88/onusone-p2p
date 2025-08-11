@@ -18,56 +18,56 @@ const boards: Board[] = [
   {
     slug: 'general',
     name: '📋 General Discussion',
-    description: 'General chat and discussions - the starting gate',
-    category: '🏁 Community'
+    description: 'General chat and discussions',
+    category: 'Community'
   },
   {
     slug: 'technology',
     name: '💻 Technology',
-    description: 'Tech talk and development - the digital race track',
-    category: '⚡ Tech'
+    description: 'Tech talk and development',
+    category: 'Tech'
   },
   {
     slug: 'crypto',
     name: '₿ Cryptocurrency',
-    description: 'Crypto and blockchain talk - the money race',
-    category: '💰 Finance'
+    description: 'Crypto and blockchain talk',
+    category: 'Finance'
   },
   {
     slug: 'gaming',
     name: '🎮 Gaming',
-    description: 'Gaming and entertainment - the fun track',
-    category: '🎰 Entertainment'
+    description: 'Gaming and entertainment',
+    category: 'Entertainment'
   },
   {
     slug: 'art',
     name: '🎨 Art & Design',
-    description: 'Creative arts and design - the beauty track',
-    category: '🎭 Creative'
+    description: 'Creative arts and design',
+    category: 'Creative'
   },
   {
     slug: 'music',
     name: '🎵 Music',
-    description: 'Music and audio discussions - the sound track',
-    category: '🎶 Audio'
+    description: 'Music and audio discussions',
+    category: 'Audio'
   },
   {
     slug: 'dev',
     name: '⚡ Development',
-    description: 'Development and coding discussions - the code track',
-    category: '💻 Code'
+    description: 'Development and coding discussions',
+    category: 'Code'
   },
   {
     slug: 'trading',
     name: '📈 Trading',
-    description: 'Trading and finance - the profit track',
-    category: '📊 Markets'
+    description: 'Trading and finance',
+    category: 'Markets'
   },
   {
     slug: 'community',
     name: '👥 Community',
-    description: 'Community topics and events - the people track',
-    category: '🏘️ People'
+    description: 'Community topics and events',
+    category: 'People'
   }
 ];
 
@@ -89,8 +89,8 @@ export default function BoardsIndex() {
   return (
     <>
       <Head>
-        <title>🏇 Race Tracks - OnusOne</title>
-        <meta name="description" content="90s neo-noir discussion boards" />
+        <title>Boards - OnusOne</title>
+        <meta name="description" content="Discussion boards" />
       </Head>
 
       <ScribeLayout>
@@ -103,6 +103,8 @@ export default function BoardsIndex() {
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            animation: breathing 3.5s ease-in-out infinite;
+            transform-origin: center;
           }
           
           .board-card::before {
@@ -126,7 +128,8 @@ export default function BoardsIndex() {
             box-shadow: 
               0 0 20px rgba(0, 255, 0, 0.3),
               0 8px 25px rgba(0, 0, 0, 0.8);
-            transform: translateY(-4px);
+            transform: translateY(-4px) scale(1.02);
+            animation: breathing-hover 3.5s ease-in-out infinite;
           }
           
           .category-badge {
@@ -136,8 +139,33 @@ export default function BoardsIndex() {
             padding: 4px 8px;
             border-radius: 6px;
             font-size: 0.75rem;
-            text-transform: uppercase;
+          text-transform: uppercase;
             letter-spacing: 0.5px;
+            animation: breathing 3.5s ease-in-out infinite;
+            transform-origin: center;
+          }
+          
+          .category-badge:hover {
+            animation: breathing-hover 3.5s ease-in-out infinite;
+            transform: scale(1.05);
+          }
+          
+          @keyframes breathing {
+            0%, 100% { 
+              transform: scale(1);
+            }
+            50% { 
+              transform: scale(1.02);
+            }
+          }
+          
+          @keyframes breathing-hover {
+            0%, 100% { 
+              transform: scale(1.02);
+            }
+            50% { 
+              transform: scale(1.04);
+            }
           }
           
           .neon-glow {
@@ -151,14 +179,14 @@ export default function BoardsIndex() {
         {/* Page Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold mb-6 neon-glow text-green-400">
-            🏇 RACE TRACKS 🏇
+            BOARDS
           </h1>
           <p className="text-xl text-green-300 max-w-3xl mx-auto">
-            Choose your track. Post your messages. Win the race. Simple as that.
+            Choose a board. Post your messages. Simple as that.
           </p>
           <div className="mt-4 flex justify-center space-x-2">
             <span className="dancing-skeleton text-2xl">💀</span>
-            <span className="text-green-400 text-sm">90s neo-noir vibes</span>
+            <span className="text-green-400 text-sm">90s neo-noir aesthetic</span>
             <span className="dancing-skeleton text-2xl">💀</span>
           </div>
         </div>
@@ -186,7 +214,7 @@ export default function BoardsIndex() {
               
               <div className="flex items-center justify-between">
                 <span className="text-green-400 text-sm font-bold">
-                  🏁 ENTER TRACK
+                  ENTER
                 </span>
                 <span className="text-green-300 text-lg">→</span>
               </div>
@@ -198,10 +226,10 @@ export default function BoardsIndex() {
         <div className="mt-16 text-center">
           <div className="horse-track-border p-8">
             <h2 className="text-2xl font-bold mb-4 neon-glow text-green-400">
-              🎰 READY TO RACE? 🎰
+              READY?
             </h2>
             <p className="text-green-300 mb-6">
-              Pick a track and start posting. The system works if messages stick.
+              Pick a board and start posting. The system works if messages stick.
             </p>
             <div className="flex justify-center space-x-4">
               <span className="dancing-skeleton text-4xl">💀</span>

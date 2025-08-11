@@ -148,12 +148,37 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
           text-transform: uppercase;
           letter-spacing: 1px;
           transition: all 0.3s ease;
+          animation: breathing 3.5s ease-in-out infinite;
+          transform-origin: center;
         }
         
         .casino-button:hover {
           background: linear-gradient(45deg, #00cc00, #00ff00);
           box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
-          transform: translateY(-2px);
+          transform: translateY(-2px) scale(1.02);
+          animation: breathing-hover 3.5s ease-in-out infinite;
+        }
+        
+        @keyframes breathing {
+          0%, 100% { 
+            transform: scale(1);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+          }
+          50% { 
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+          }
+        }
+        
+        @keyframes breathing-hover {
+          0%, 100% { 
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+          }
+          50% { 
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 0 25px rgba(0, 255, 0, 1);
+          }
         }
       `}</style>
 
@@ -165,7 +190,7 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-6">
             <Link href="/" className="text-3xl font-bold neon-glow text-green-400 hover:text-green-300 transition-colors">
-              🏇 ONUSONE 🏇
+              ONUSONE
             </Link>
             <div className="flex items-center space-x-2">
               <span className="dancing-skeleton text-2xl">💀</span>
@@ -227,7 +252,7 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
 
           <div className="horse-track-border p-4">
             <h3 className="text-green-400 font-bold text-lg mb-3 neon-glow">
-              🏁 RACE TRACKS 🏁
+              BOARDS
             </h3>
             <nav className="space-y-2">
               {BOARDS.map((board) => (
