@@ -66,22 +66,22 @@ const AccountPage = () => {
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-center">My Account</h1>
+          <h1 className="text-3xl font-bold mb-8 text-center">Profile</h1>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Account Information */}
             <div className="space-y-6">
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Account Information</h2>
+              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 className="text-xl font-semibold mb-4">Identity</h2>
                 
                 <div className="space-y-4">
                   <div>
-                    <p className="text-gray-400 text-sm">Display Name</p>
+                    <p className="text-gray-400 text-sm">Name</p>
                     <p className="text-lg font-medium">{user?.displayName || 'Anonymous'}</p>
                   </div>
 
                   <div>
-                    <p className="text-gray-400 text-sm">Wallet Address</p>
+                    <p className="text-gray-400 text-sm">Address</p>
                     <p className="text-sm font-mono text-blue-400 break-all">{user?.walletAddress || 'N/A'}</p>
                   </div>
 
@@ -93,14 +93,14 @@ const AccountPage = () => {
                   </div>
 
                   <div>
-                    <p className="text-gray-400 text-sm">Total Posts</p>
+                    <p className="text-gray-400 text-sm">Posts</p>
                     <p className="text-lg font-medium text-blue-400">
-                      {user?.totalPosts || 0} posts
+                      {user?.totalPosts || 0}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-gray-400 text-sm">Total Staked</p>
+                    <p className="text-gray-400 text-sm">Staked</p>
                     <p className="text-lg font-medium text-purple-400">
                       {user?.totalStaked || 0} {TOKEN_SYMBOL}
                     </p>

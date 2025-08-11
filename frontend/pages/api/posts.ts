@@ -55,12 +55,15 @@ async function getPosts(req: NextApiRequest, res: NextApiResponse) {
   if (!board) return res.status(400).json({ error: 'board required' });
   
   const key = `board:${board}`;
-  const ids = await kv.lrange<string>(key, 0, 99);
+  const ids = await kv.lrange(key, 0, 99);
   if (ids.length === 0) return res.status(200).json([]);
   
-  const pipe = kv.pipeline();
-  ids.forEach((id) => pipe.hgetall(id));
-  const posts = await pipe.exec<any>();
+  // Fetch posts individually since pipeline might not be available
+  const posts = [];
+  for (const id of ids) {
+    const post = await kv.hgetall(id);
+    if (post) posts.push(post);
+  }
   
   // Calculate decay scores and filter posts
   const postsWithDecay = posts

@@ -72,7 +72,7 @@ async function updateUserReputation(userId: string): Promise<void> {
     const userActionsKey = `reputation:user:${userId}:actions`;
     const actionIds = await kv.lrange(userActionsKey, 0, -1);
     
-    const actions = [];
+    const actions: any[] = [];
     for (const actionId of actionIds) {
       const actionKey = `reputation:action:${actionId}`;
       const action = await kv.hgetall(actionKey);
@@ -130,7 +130,7 @@ async function updateUserReputation(userId: string): Promise<void> {
         percentile: 0,
         actionsCount: actions.length,
         lastActivity: lastActivity.toISOString(),
-        joinedDate: userInfo?.createdAt || new Date().toISOString(),
+        joinedDate: (userInfo?.createdAt as string) || new Date().toISOString(),
         badges: [],
         stats
       }),
@@ -233,4 +233,4 @@ async function updateGlobalReputationStats(action: ReputationActionType, points:
 }
 
 // Apply security middleware and export
-export default withSecurity('reputation', trackReputationSchema)(trackReputation);
+export default withSecurity('createPost', trackReputationSchema)(trackReputation);

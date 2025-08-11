@@ -10,6 +10,8 @@ import { useRouter } from 'next/router';
 import { WalletAuthSystem, WalletProfile } from '../lib/wallet-auth-system';
 
 interface WalletUser {
+  id: string;
+  username: string;
   walletAddress: string;
   publicKey: string;
   displayName: string;
@@ -18,6 +20,9 @@ interface WalletUser {
   reputation: number;
   networkTime: string;
   joinedAt: string;
+  tokenBalance?: number;
+  totalEarned?: number;
+  totalBurned?: number;
 }
 
 interface WalletAuthContextType {
@@ -27,7 +32,7 @@ interface WalletAuthContextType {
   isConnecting: boolean;
   login: () => Promise<boolean>;
   logout: () => void;
-  addPost: (content: string, boardSlug: string) => void;
+  addPost: (content: string, boardSlug: string) => any;
   addStake: (postId: string, amount: number, txHash: string) => void;
 }
 
@@ -62,6 +67,8 @@ export function WalletAuthProvider({ children }: { children: React.ReactNode }) 
       if (session && profile && session.isConnected) {
         setProfile(profile);
         setUser({
+          id: profile.walletAddress, // Use wallet address as ID
+          username: profile.displayName, // Use displayName as username
           walletAddress: profile.walletAddress,
           publicKey: profile.publicKey,
           displayName: profile.displayName,
@@ -79,12 +86,16 @@ export function WalletAuthProvider({ children }: { children: React.ReactNode }) 
   };
 
   const handleAutoLogin = async (): Promise<boolean> => {
-    if (!connected || !publicKey) return false;
+    if (!connected || !publicKey) {
+      console.warn('Wallet not connected during auto-login');
+      return false;
+    }
 
     setIsConnecting(true);
     
     try {
       const walletAddress = publicKey.toString();
+      console.log('🔑 Attempting auto-login for wallet:', walletAddress);
       
       // Create or load profile
       const profile = WalletAuthSystem.getOrCreateProfile(walletAddress, walletAddress);
@@ -95,6 +106,8 @@ export function WalletAuthProvider({ children }: { children: React.ReactNode }) 
       // Set user state
       setProfile(profile);
       setUser({
+        id: profile.walletAddress, // Use wallet address as ID
+        username: profile.displayName, // Use displayName as username
         walletAddress: profile.walletAddress,
         publicKey: profile.publicKey,
         displayName: profile.displayName,
@@ -124,11 +137,21 @@ export function WalletAuthProvider({ children }: { children: React.ReactNode }) 
 
   const login = async (): Promise<boolean> => {
     if (!connected || !publicKey) {
-      console.warn('Wallet not connected');
-      return false;
+      console.warn('Wallet not connected during login attempt');
+      throw new Error('Please connect your wallet first');
     }
     
-    return handleAutoLogin();
+    try {
+      const result = await handleAutoLogin();
+      if (!result) {
+        throw new Error('Login failed - please try reconnecting your wallet');
+      }
+      return result;
+    } catch (error) {
+      console.error('Login error:', error);
+      setIsConnecting(false);
+      throw error;
+    }
   };
 
   const handleLogout = () => {
@@ -140,6 +163,18 @@ export function WalletAuthProvider({ children }: { children: React.ReactNode }) 
   };
 
   const addPost = (content: string, boardSlug: string) => {
+    if (!user || !connected) {
+      throw new Error('Authentication required - please connect your wallet first');
+    }
+    
+    if (!content || content.trim().length < 10) {
+      throw new Error('Post content must be at least 10 characters long');
+    }
+    
+    if (!boardSlug) {
+      throw new Error('Board selection required');
+    }
+    
     try {
       const post = WalletAuthSystem.addPost(content, boardSlug);
       
@@ -154,9 +189,10 @@ export function WalletAuthProvider({ children }: { children: React.ReactNode }) 
       }
       
       console.log('📝 Post added successfully');
+      return post;
     } catch (error) {
       console.error('Error adding post:', error);
-      throw error;
+      throw new Error(`Failed to create post: ${error.message}`);
     }
   };
 

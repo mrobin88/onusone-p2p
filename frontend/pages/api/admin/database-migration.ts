@@ -330,7 +330,7 @@ async function analyzeCurrentStructure(): Promise<MigrationResult> {
     }
 
     // Check for optimization opportunities
-    const optimizations = [];
+    const optimizations: string[] = [];
     
     if (categories['presence'] > 100) {
       optimizations.push('High presence key count - consider cleanup');
@@ -458,10 +458,11 @@ async function createBoardIndexes(): Promise<{ count: number }> {
   for (const key of postKeys) {
     const post = await kv.hgetall(key);
     if (post && post.boardType) {
-      if (!boardPosts[post.boardType]) {
-        boardPosts[post.boardType] = [];
+      const boardType = post.boardType as string;
+      if (!boardPosts[boardType]) {
+        boardPosts[boardType] = [];
       }
-      boardPosts[post.boardType].push(post.id);
+      boardPosts[boardType].push(post.id as string);
     }
   }
   

@@ -8,10 +8,12 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useWalletAuth } from '../../components/WalletAuth';
 import ScribeLayout from '../../components/ScribeLayout';
-import ScribeMessage from '../../components/ScribeMessage';
+import GamingChat from '../../components/GamingChat';
 import TokenStaking from '../../components/TokenStaking';
+import ReplyModal from '../../components/ReplyModal';
 import { useP2PConnection } from '../../hooks/useP2PConnection';
 import { loadMessages, saveMessages, appendMessage } from '../../lib/cache';
+import { WalletAuthSystem } from '../../lib/wallet-auth-system';
 
 // Board configuration
 const BOARDS = {
@@ -41,6 +43,14 @@ interface Message {
   isVisible?: boolean;
   stakeTotal: number;
   burnedTotal: number;
+  parentMessageId?: string; // For replies
+  replyTo?: {
+    id: string;
+    content: string;
+    author: {
+      username: string;
+    };
+  }; // For displaying what this is replying to
 }
 
 export default function BoardDetail() {
@@ -50,9 +60,10 @@ export default function BoardDetail() {
   
   const [board, setBoard] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [stakingMessageId, setStakingMessageId] = useState<string | null>(null);
+  const [replyModalOpen, setReplyModalOpen] = useState(false);
+  const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null);
 
   // P2P networking (disabled to prevent spam)
   const {
@@ -132,16 +143,14 @@ export default function BoardDetail() {
     }
   };
 
-  const handleSubmitMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newMessage.trim() || !user || !board || submitting) return;
+  const handleSubmitMessage = async (content: string) => {
+    if (!content.trim() || !user || !board || submitting) return;
 
     setSubmitting(true);
     
     try {
       // Add post using wallet auth system
-      const walletPost = addPost(newMessage.trim(), board.slug);
+      const walletPost = addPost(content.trim(), board.slug);
       
       const message: Message = {
         id: walletPost.id,
@@ -163,8 +172,8 @@ export default function BoardDetail() {
       
       // Add to local state and cache
       const updatedMessages = [message, ...messages];
-      setMessages(updatedMessages); console.log("🔄 UI updated with", updatedMessages.length, "messages");
-      setNewMessage('');
+      setMessages(updatedMessages);
+      console.log("🔄 UI updated with", updatedMessages.length, "messages");
       await appendMessage(board.slug, message);
       
       // Broadcast via P2P if connected
@@ -219,8 +228,88 @@ export default function BoardDetail() {
   };
 
   const handleReply = async (messageId: string) => {
-    // Implement reply logic
-    console.log(`Reply to message ${messageId}`);
+    const message = messages.find(m => m.id === messageId);
+    if (message) {
+      setReplyingToMessage(message);
+      setReplyModalOpen(true);
+    }
+  };
+
+  const handleReplySubmit = async (replyContent: string, parentMessageId: string) => {
+    if (!user || !isAuthenticated) {
+      throw new Error('User not authenticated');
+    }
+
+    const parentMessage = messages.find(m => m.id === parentMessageId);
+    if (!parentMessage) {
+      throw new Error('Parent message not found');
+    }
+
+    const replyMessage: Message = {
+      id: `reply_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      content: replyContent,
+      author: {
+        id: user.walletAddress,
+        username: user.displayName || 'Anonymous',
+        reputation: user.reputation || 0
+      },
+      boardSlug: slug as string,
+      createdAt: new Date().toISOString(),
+      decayScore: 100,
+      replies: 0,
+      engagements: 0,
+      stakeTotal: 0,
+      burnedTotal: 0,
+      parentMessageId: parentMessageId,
+      replyTo: {
+        id: parentMessage.id,
+        content: parentMessage.content.substring(0, 100) + (parentMessage.content.length > 100 ? '...' : ''),
+        author: {
+          username: parentMessage.author.username
+        }
+      }
+    };
+
+    // Add reply to messages
+    const updatedMessages = [...messages, replyMessage];
+    setMessages(updatedMessages);
+
+    // Update parent message reply count
+    const updatedParentMessages = updatedMessages.map(m => 
+      m.id === parentMessageId 
+        ? { ...m, replies: m.replies + 1 }
+        : m
+    );
+    setMessages(updatedParentMessages);
+
+    // Save to cache
+    await saveMessages(slug as string, updatedParentMessages);
+
+    // Update P2P network if connected
+    if (p2pConnected) {
+      try {
+        await broadcastMessage({
+          type: 'post',
+          content: replyContent,
+          boardSlug: slug as string,
+          parentMessageId: parentMessageId,
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        console.error('Failed to broadcast reply:', error);
+      }
+    }
+
+    // Update user profile posts
+    if (addPost) {
+      await addPost({
+        id: replyMessage.id,
+        content: replyContent,
+        boardSlug: slug as string,
+        timestamp: replyMessage.createdAt,
+        parentMessageId: parentMessageId
+      });
+    }
   };
 
   if (!board) {
@@ -243,96 +332,16 @@ export default function BoardDetail() {
         <meta name="description" content={board.description} />
       </Head>
 
-      {/* Board Header */}
-      <div className="border-b border-border-line p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="heading-1">{board.name}</h1>
-            <p className="body-small text-text-slate">{board.description}</p>
-          </div>
-          <div className="text-right">
-            <div className="caption text-text-ash">
-              {messages.length} messages • {board.category}
-            </div>
-            {p2pConnected && (
-              <div className="caption text-status-green">
-                ● P2P Active ({peerCount} peers)
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Compose Message */}
-        {isAuthenticated ? (
-          <form onSubmit={handleSubmitMessage} className="space-y-4">
-            <div className="flex items-start space-x-4">
-              <div className="message-avatar flex-shrink-0">
-                {user?.displayName?.slice(0, 2).toUpperCase()}
-              </div>
-              <div className="flex-1">
-                <textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={`Share your thoughts in ${board.name}...`}
-                  className="textarea-field"
-                  rows={3}
-                  disabled={submitting}
-                />
-                <div className="mt-2 flex justify-between items-center">
-                  <div className="caption text-text-slate">
-                    Posting as {user?.displayName} • {user?.reputation} reputation
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!newMessage.trim() || submitting}
-                    className="btn-primary"
-                  >
-                    {submitting ? 'Posting...' : 'Post Message'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </form>
-        ) : (
-          <div className="text-center py-8">
-            <p className="body-main text-text-slate mb-4">
-              Connect your wallet to participate in the discussion
-            </p>
-            <button className="btn-primary">
-              Connect Wallet
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto">
-        {messages.length > 0 ? (
-          messages.map((message) => (
-            <ScribeMessage
-              key={message.id}
-              id={message.id}
-              content={message.content}
-              author={message.author}
-              timestamp={message.createdAt}
-              engagements={message.engagements}
-              stakeTotal={message.stakeTotal}
-              onReact={handleReaction}
-              onStake={handleStake}
-              onReply={handleReply}
-            />
-          ))
-        ) : (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <p className="heading-3 text-text-slate mb-2">No messages yet</p>
-              <p className="body-small text-text-ash">
-                Be the first to start the conversation in {board.name}
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Gaming Chat Interface */}
+      <GamingChat
+        boardSlug={board.slug}
+        boardName={board.name}
+        messages={messages}
+        onSubmitMessage={handleSubmitMessage}
+        onStake={handleStake}
+        onReply={handleReply}
+        isAuthenticated={isAuthenticated}
+      />
       
       {/* Staking Modal */}
       {stakingMessageId && (
@@ -343,6 +352,20 @@ export default function BoardDetail() {
           onStakeError={handleStakeError}
           isOpen={true}
           onClose={() => setStakingMessageId(null)}
+        />
+      )}
+
+      {/* Reply Modal */}
+      {replyModalOpen && replyingToMessage && (
+        <ReplyModal
+          isOpen={replyModalOpen}
+          onClose={() => {
+            setReplyModalOpen(false);
+            setReplyingToMessage(null);
+          }}
+          parentMessage={replyingToMessage}
+          onReplySubmit={handleReplySubmit}
+          boardSlug={slug as string}
         />
       )}
     </ScribeLayout>

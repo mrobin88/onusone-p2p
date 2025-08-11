@@ -256,7 +256,7 @@ export class ContentDAO extends BaseDAO {
       const boardKey = KeyPatterns.BOARD(boardName);
       const postIds = await kv.lrange(boardKey, 0, limit - 1);
       
-      const posts = [];
+      const posts: any[] = [];
       for (const postId of postIds) {
         const post = await this.get(postId);
         if (post && post.isVisible) {
@@ -367,7 +367,7 @@ export class P2PDataDAO {
       const peers = await kv.smembers(peersKey);
       
       // Get status from all active nodes
-      const nodeStatuses = [];
+      const nodeStatuses: any[] = [];
       for (const nodeId of peers) {
         const statusKey = KeyPatterns.P2P_STATUS(nodeId);
         const status = await kv.hgetall(statusKey);

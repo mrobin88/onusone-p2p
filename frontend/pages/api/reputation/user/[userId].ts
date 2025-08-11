@@ -60,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const userActionsKey = `reputation:user:${userId}:actions`;
     const recentActionIds = await kv.lrange(userActionsKey, 0, 19);
     
-    const recentActions = [];
+    const recentActions: any[] = [];
     for (const actionId of recentActionIds) {
       const actionKey = `reputation:action:${actionId}`;
       const action = await kv.hgetall(actionKey);
@@ -80,7 +80,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       success: true,
       reputation: {
         ...reputation,
-        badges: Array.isArray(reputation.badges) ? reputation.badges : JSON.parse(reputation.badges || '[]'),
+        badges: Array.isArray(reputation.badges) ? reputation.badges : JSON.parse((reputation.badges as string) || '[]'),
         stats: typeof reputation.stats === 'string' ? JSON.parse(reputation.stats) : reputation.stats
       },
       summary,

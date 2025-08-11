@@ -3,388 +3,421 @@
  * Actual SPL token transfers and wallet verification
  */
 
+import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 import { 
-  Connection, 
-  PublicKey, 
-  Transaction,
-  SystemProgram,
-  LAMPORTS_PER_SOL,
-  sendAndConfirmTransaction,
-  Keypair
-} from '@solana/web3.js';
-import {
-  getAssociatedTokenAddress,
-  createTransferInstruction,
-  createBurnInstruction,
+  TOKEN_PROGRAM_ID, 
+  ASSOCIATED_TOKEN_PROGRAM_ID, 
+  getAssociatedTokenAddress, 
+  createTransferInstruction, 
   getAccount,
-  TokenAccountNotFoundError,
-  TokenInvalidAccountOwnerError
+  createAssociatedTokenAccountInstruction,
+  getMinimumBalanceForRentExemptAccount
 } from '@solana/spl-token';
-import { WalletAdapter } from '@solana/wallet-adapter-base';
 
-// REAL Solana configuration
-const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
-
-// Use valid placeholder public keys for build time (these would be replaced with real ones in production)
-const DEFAULT_TOKEN_MINT = '11111111111111111111111111111112'; // Valid placeholder
-const DEFAULT_TREASURY = '11111111111111111111111111111112'; // Valid placeholder
-
-const ONU_TOKEN_MINT = new PublicKey(process.env.NEXT_PUBLIC_TOKEN_MINT || DEFAULT_TOKEN_MINT);
-const TREASURY_WALLET = new PublicKey(process.env.NEXT_PUBLIC_TREASURY_ADDRESS || DEFAULT_TREASURY);
-
-export interface WalletBalance {
-  sol: number;
-  onu: number;
-  hasMinimumStake: boolean;
-  canRunNode: boolean;
+export interface SolanaConfig {
+  rpcUrl: string;
+  network: 'devnet' | 'testnet' | 'mainnet-beta';
+  programId: string;
+  treasuryAddress: string;
+  tokenMint: string;
 }
 
-export interface NodeStakeRequirement {
-  minimumONU: number;
-  minimumSOL: number; // For transaction fees
-  currentBalance: WalletBalance;
-  missing: {
-    onu: number;
-    sol: number;
-  };
+export interface StakeTransaction {
+  stakeId: string;
+  amount: number;
+  contentId: string;
+  contentType: string;
+  userAddress: string;
+  timestamp: number;
+  signature?: string;
+}
+
+export interface RewardDistribution {
+  totalAmount: number;
+  nodeOperators: number; // 80%
+  treasury: number; // 15%
+  burn: number; // 5%
+  timestamp: number;
+}
+
+export interface TokenBalance {
+  onu: number;
+  sol: number;
+  staked: number;
+  available: number;
 }
 
 export interface RealPayment {
   signature: string;
   amount: number;
-  recipient: string;
+  success: boolean;
   timestamp: number;
-  confirmed: boolean;
 }
 
-export class RealSolanaPayments {
+export class OnusOneSolanaClient {
   private connection: Connection;
-  
-  constructor() {
-    this.connection = new Connection(SOLANA_RPC, 'confirmed');
+  private config: SolanaConfig;
+  private wallet: any;
+
+  constructor(config: SolanaConfig, wallet: any) {
+    this.config = config;
+    this.wallet = wallet;
+    this.connection = new Connection(config.rpcUrl, 'confirmed');
   }
 
   /**
-   * Get REAL wallet balance - No simulation
+   * Stake tokens for node operation
    */
-  async getWalletBalance(walletAddress: string): Promise<WalletBalance> {
+  async stakeForNode(wallet: any, amount: number): Promise<RealPayment> {
+    try {
+      if (!wallet || !wallet.publicKey) {
+        throw new Error('Invalid wallet');
+      }
+
+      // Create a simple transfer to treasury as stake
+      const transaction = new Transaction();
+      
+      // Get treasury token account
+      const treasuryTokenAccount = await getAssociatedTokenAddress(
+        new PublicKey(this.config.tokenMint),
+        new PublicKey(this.config.treasuryAddress)
+      );
+
+      // Get user's token account
+      const userTokenAccount = await getAssociatedTokenAddress(
+        new PublicKey(this.config.tokenMint),
+        wallet.publicKey
+      );
+
+      // Check if user has a token account, create if not
+      try {
+        await getAccount(this.connection, userTokenAccount);
+      } catch (error) {
+        // Token account doesn't exist, create it
+        const createAccountIx = createAssociatedTokenAccountInstruction(
+          wallet.publicKey,
+          userTokenAccount,
+          wallet.publicKey,
+          new PublicKey(this.config.tokenMint)
+        );
+        transaction.add(createAccountIx);
+      }
+
+      // Check if treasury has a token account, create if not
+      try {
+        await getAccount(this.connection, treasuryTokenAccount);
+      } catch (error) {
+        // Treasury token account doesn't exist, create it
+        const createTreasuryAccountIx = createAssociatedTokenAccountInstruction(
+          wallet.publicKey,
+          treasuryTokenAccount,
+          new PublicKey(this.config.treasuryAddress),
+          new PublicKey(this.config.tokenMint)
+        );
+        transaction.add(createTreasuryAccountIx);
+      }
+
+      // Add transfer instruction
+      const transferInstruction = createTransferInstruction(
+        userTokenAccount,
+        treasuryTokenAccount,
+        wallet.publicKey,
+        amount * Math.pow(10, 6) // Convert to token units (assuming 6 decimals)
+      );
+
+      transaction.add(transferInstruction);
+
+      // Get recent blockhash
+      const { blockhash } = await this.connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = wallet.publicKey;
+
+      // Sign and send transaction
+      const signedTx = await wallet.signTransaction(transaction);
+      const signature = await this.connection.sendRawTransaction(signedTx.serialize());
+
+      // Wait for confirmation
+      await this.connection.confirmTransaction(signature);
+
+      return {
+        signature,
+        amount,
+        success: true,
+        timestamp: Date.now()
+      };
+    } catch (error) {
+      console.error('Stake for node failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Stake tokens for content
+   */
+  async stakeTokens(
+    amount: number,
+    contentId: string,
+    contentType: string,
+    wallet: any
+  ): Promise<StakeTransaction> {
+    try {
+      if (!wallet || !wallet.publicKey) {
+        throw new Error('Invalid wallet');
+      }
+
+      const stakeId = `stake_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Create stake transaction
+      const result = await this.stakeForNode(wallet, amount);
+      
+      return {
+        stakeId,
+        amount,
+        contentId,
+        contentType,
+        userAddress: wallet.publicKey.toString(),
+        timestamp: Date.now(),
+        signature: result.signature
+      };
+    } catch (error) {
+      console.error('Stake tokens failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Unstake tokens
+   */
+  async unstakeTokens(
+    stakeId: string,
+    amount: number,
+    wallet: any
+  ): Promise<{ signature: string; amountReturned: number; decayPenalty: number }> {
+    try {
+      if (!wallet || !wallet.publicKey) {
+        throw new Error('Invalid wallet');
+      }
+
+      // For now, just return the staked amount (in a real implementation, this would check stake conditions)
+      const amountReturned = amount * 0.95; // 5% penalty for early unstaking
+      const decayPenalty = amount * 0.05;
+
+      // Create a transfer back to user (this is simplified - real implementation would check stake conditions)
+      const transaction = new Transaction();
+      
+      const treasuryTokenAccount = await getAssociatedTokenAddress(
+        new PublicKey(this.config.tokenMint),
+        new PublicKey(this.config.treasuryAddress)
+      );
+
+      const userTokenAccount = await getAssociatedTokenAddress(
+        new PublicKey(this.config.tokenMint),
+        wallet.publicKey
+      );
+
+      const transferInstruction = createTransferInstruction(
+        treasuryTokenAccount,
+        userTokenAccount,
+        new PublicKey(this.config.treasuryAddress),
+        amountReturned * Math.pow(10, 6)
+      );
+
+      transaction.add(transferInstruction);
+
+      const { blockhash } = await this.connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = wallet.publicKey;
+
+      const signedTx = await wallet.signTransaction(transaction);
+      const signature = await this.connection.sendRawTransaction(signedTx.serialize());
+
+      await this.connection.confirmTransaction(signature);
+
+      return {
+        signature,
+        amountReturned,
+        decayPenalty
+      };
+    } catch (error) {
+      console.error('Unstake tokens failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get wallet balance
+   */
+  async getWalletBalance(walletAddress: string): Promise<{ sol: number; onu: number }> {
     try {
       const publicKey = new PublicKey(walletAddress);
       
       // Get SOL balance
       const solBalance = await this.connection.getBalance(publicKey);
-      const sol = solBalance / LAMPORTS_PER_SOL;
-
+      
       // Get ONU token balance
-      let onu = 0;
+      let onuBalance = 0;
       try {
-        const tokenAccount = await getAssociatedTokenAddress(ONU_TOKEN_MINT, publicKey);
+        const tokenAccount = await getAssociatedTokenAddress(
+          new PublicKey(this.config.tokenMint),
+          publicKey
+        );
+        
         const accountInfo = await getAccount(this.connection, tokenAccount);
-        onu = Number(accountInfo.amount) / Math.pow(10, 9); // Assuming 9 decimals
+        onuBalance = Number(accountInfo.amount) / Math.pow(10, 6);
       } catch (error) {
-        // No token account = 0 balance
-        if (error instanceof TokenAccountNotFoundError || 
-            error instanceof TokenInvalidAccountOwnerError) {
-          onu = 0;
-        } else {
-          throw error;
-        }
+        // Token account doesn't exist, balance is 0
+        onuBalance = 0;
       }
 
       return {
-        sol,
-        onu,
-        hasMinimumStake: onu >= 100, // 100 ONU minimum
-        canRunNode: onu >= 100 && sol >= 0.01 // Need SOL for tx fees
+        sol: solBalance / Math.pow(10, 9), // Convert lamports to SOL
+        onu: onuBalance
       };
-
     } catch (error) {
       console.error('Failed to get wallet balance:', error);
-      throw new Error(`Failed to get wallet balance: ${error}`);
+      return { sol: 0, onu: 0 };
     }
   }
 
   /**
-   * Check node stake requirements - REAL verification
+   * Get token balances for a user
    */
-  async checkNodeRequirements(walletAddress: string): Promise<NodeStakeRequirement> {
-    const balance = await this.getWalletBalance(walletAddress);
-    const minimumONU = 100;
-    const minimumSOL = 0.01;
-
-    return {
-      minimumONU,
-      minimumSOL,
-      currentBalance: balance,
-      missing: {
-        onu: Math.max(0, minimumONU - balance.onu),
-        sol: Math.max(0, minimumSOL - balance.sol)
-      }
-    };
-  }
-
-  /**
-   * Send REAL ONU tokens as node earnings
-   */
-  async sendNodeEarnings(
-    fromWallet: WalletAdapter,
-    toWalletAddress: string,
-    amount: number
-  ): Promise<RealPayment> {
-    if (!fromWallet.publicKey) {
-      throw new Error('Wallet not connected');
-    }
-
+  async getTokenBalances(userAddress: string): Promise<TokenBalance> {
     try {
-      const fromPublicKey = fromWallet.publicKey;
-      const toPublicKey = new PublicKey(toWalletAddress);
-
-      // Get token accounts
-      const fromTokenAccount = await getAssociatedTokenAddress(ONU_TOKEN_MINT, fromPublicKey);
-      const toTokenAccount = await getAssociatedTokenAddress(ONU_TOKEN_MINT, toPublicKey);
-
-      // Create transfer instruction
-      const transferInstruction = createTransferInstruction(
-        fromTokenAccount,
-        toTokenAccount,
-        fromPublicKey,
-        amount * Math.pow(10, 9), // Convert to token units
-        [],
-        ONU_TOKEN_MINT
-      );
-
-      // Create and send transaction
-      const transaction = new Transaction().add(transferInstruction);
-      const { blockhash } = await this.connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = fromPublicKey;
-
-      // Sign and send
-      const signedTransaction = await fromWallet.signTransaction!(transaction);
-      const signature = await this.connection.sendRawTransaction(signedTransaction.serialize());
-
-      // Confirm transaction
-      await this.connection.confirmTransaction(signature, 'confirmed');
-
+      const balances = await this.getWalletBalance(userAddress);
+      
       return {
-        signature,
-        amount,
-        recipient: toWalletAddress,
-        timestamp: Date.now(),
-        confirmed: true
+        onu: balances.onu,
+        sol: balances.sol,
+        staked: 0, // This would need to be tracked in a database
+        available: balances.onu
       };
-
     } catch (error) {
-      console.error('Failed to send node earnings:', error);
-      throw new Error(`Payment failed: ${error}`);
+      console.error('Failed to get token balances:', error);
+      return {
+        onu: 0,
+        sol: 0,
+        staked: 0,
+        available: 0
+      };
     }
   }
 
   /**
-   * Stake ONU tokens for running a node - REAL transaction
+   * Get ONU token price (placeholder for now)
    */
-  async stakeForNode(
-    wallet: WalletAdapter,
-    stakeAmount: number
-  ): Promise<RealPayment> {
-    if (!wallet.publicKey) {
-      throw new Error('Wallet not connected');
-    }
-
-    try {
-      // Send stake to treasury (locked for node operation)
-      return await this.sendNodeEarnings(wallet, TREASURY_WALLET.toString(), stakeAmount);
-    } catch (error) {
-      console.error('Failed to stake for node:', error);
-      throw new Error(`Staking failed: ${error}`);
-    }
+  async getONUPrice(): Promise<number> {
+    // In a real implementation, this would fetch from DEX or price oracle
+    return 0.01; // Placeholder price
   }
 
   /**
-   * Verify a payment signature on-chain - No trust, only verify
+   * Verify payment signature
    */
   async verifyPayment(signature: string): Promise<boolean> {
     try {
-      const transaction = await this.connection.getTransaction(signature, {
-        commitment: 'confirmed'
-      });
-
+      const transaction = await this.connection.getTransaction(signature);
       return transaction !== null && transaction.meta?.err === null;
     } catch (error) {
-      console.error('Failed to verify payment:', error);
+      console.error('Payment verification failed:', error);
       return false;
     }
   }
 
   /**
-   * Get current ONU token price from Solana DEX
+   * Update connection
    */
-  async getONUPrice(): Promise<number> {
-    try {
-      // TODO: Query Jupiter/Raydium for actual ONU/USDC price
-      // For now, return estimated price based on market data
-      
-      // This would be real DEX price lookup:
-      // const price = await jupiterApi.getPrice('ONU', 'USDC');
-      
-      // Placeholder - replace with real price API
-      return 0.50; // $0.50 per ONU
-    } catch (error) {
-      console.error('Failed to get ONU price:', error);
-      return 0.50; // Fallback price
-    }
+  updateConnection(newRpcUrl: string): void {
+    this.connection = new Connection(newRpcUrl, 'confirmed');
   }
 
   /**
-   * Calculate real USD value of ONU holdings
+   * Get connection status
    */
-  async getUSDValue(onuAmount: number): Promise<number> {
-    const price = await this.getONUPrice();
-    return onuAmount * price;
+  getConnectionStatus(): 'connected' | 'disconnected' | 'connecting' {
+    return this.connection ? 'connected' : 'disconnected';
+  }
+
+  /**
+   * Get user stakes (placeholder - would need database integration)
+   */
+  async getUserStakes(userAddress: string): Promise<any[]> {
+    // This would need to be implemented with a database
+    return [];
+  }
+
+  /**
+   * Get network stats (placeholder)
+   */
+  async getNetworkStats(): Promise<any> {
+    return {
+      totalStaked: 0,
+      activeStakes: 0,
+      totalUsers: 0,
+      averageStake: 0
+    };
   }
 }
 
-/**
- * Stripe Integration for Fiat On-Ramp
- * Buy ONU tokens with credit card/bank transfer
- */
-export class FiatOnRamp {
-  private stripePublicKey: string;
+// Export instance for use in components
+export const realSolanaPayments = new OnusOneSolanaClient({
+  rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.devnet.solana.com',
+  network: 'devnet',
+  programId: process.env.NEXT_PUBLIC_PROGRAM_ID || '',
+  treasuryAddress: process.env.NEXT_PUBLIC_TREASURY_ADDRESS || '',
+  tokenMint: process.env.NEXT_PUBLIC_TOKEN_MINT || ''
+}, null);
 
-  constructor() {
-    this.stripePublicKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-  }
-
-  /**
-   * Create Stripe payment intent for buying ONU tokens
-   */
-  async createONUPurchase(
-    usdAmount: number,
-    walletAddress: string
-  ): Promise<{ clientSecret: string; onuAmount: number }> {
+// Fiat on-ramp functionality
+export const fiatOnRamp = {
+  async createONUPurchase(usdAmount: number, userAddress: string): Promise<{ clientSecret: string }> {
     try {
-      const payments = new RealSolanaPayments();
-      const onuPrice = await payments.getONUPrice();
-      const onuAmount = usdAmount / onuPrice;
-
       const response = await fetch('/api/stripe/create-onu-purchase', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          usdAmount,
-          onuAmount,
-          walletAddress
-        })
-      });
-
-      const { clientSecret } = await response.json();
-
-      return { clientSecret, onuAmount };
-    } catch (error) {
-      console.error('Failed to create ONU purchase:', error);
-      throw new Error(`Purchase creation failed: ${error}`);
-    }
-  }
-
-  /**
-   * Process successful fiat payment and deliver ONU tokens
-   */
-  async deliverONUTokens(
-    paymentIntentId: string,
-    walletAddress: string,
-    onuAmount: number
-  ): Promise<RealPayment> {
-    try {
-      // Verify Stripe payment completed
-      const response = await fetch('/api/stripe/verify-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentIntentId })
+          amount: usdAmount,
+          userAddress,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Payment verification failed');
+        throw new Error('Failed to create purchase');
       }
 
-      // Send ONU tokens from treasury to user wallet
-      // This would be done server-side with treasury wallet
-      const payment: RealPayment = {
-        signature: `stripe-${paymentIntentId}`,
-        amount: onuAmount,
-        recipient: walletAddress,
-        timestamp: Date.now(),
-        confirmed: true
-      };
-
-      return payment;
+      const data = await response.json();
+      return { clientSecret: data.clientSecret };
     } catch (error) {
-      console.error('Failed to deliver ONU tokens:', error);
-      throw new Error(`Token delivery failed: ${error}`);
-    }
-  }
-}
-
-/**
- * Liquidity Pool Management
- * Create and manage ONU/USDC trading pair
- */
-export class LiquidityPool {
-  private connection: Connection;
-
-  constructor() {
-    this.connection = new Connection(SOLANA_RPC, 'confirmed');
-  }
-
-  /**
-   * Get current ONU/USDC pool reserves and price
-   */
-  async getPoolInfo(): Promise<{
-    onuReserve: number;
-    usdcReserve: number;
-    currentPrice: number;
-    volume24h: number;
-  }> {
-    try {
-      // TODO: Query Raydium/Orca for actual pool data
-      // This would connect to real AMM pools
-      
-      return {
-        onuReserve: 1000000, // 1M ONU
-        usdcReserve: 500000,  // 500K USDC
-        currentPrice: 0.50,   // $0.50 per ONU
-        volume24h: 50000      // $50K daily volume
-      };
-    } catch (error) {
-      console.error('Failed to get pool info:', error);
+      console.error('Error creating ONU purchase:', error);
       throw error;
     }
-  }
+  },
 
-  /**
-   * Add liquidity to ONU/USDC pool
-   */
-  async addLiquidity(
-    wallet: WalletAdapter,
-    onuAmount: number,
-    usdcAmount: number
-  ): Promise<RealPayment> {
-    if (!wallet.publicKey) {
-      throw new Error('Wallet not connected');
-    }
-
+  async verifyPayment(paymentIntentId: string): Promise<boolean> {
     try {
-      // TODO: Create actual AMM liquidity provision transaction
-      // This would interact with Raydium/Orca smart contracts
-      
-      throw new Error('Liquidity provision not yet implemented');
+      const response = await fetch('/api/stripe/verify-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentIntentId,
+        }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      return data.success;
     } catch (error) {
-      console.error('Failed to add liquidity:', error);
-      throw error;
+      console.error('Error verifying payment:', error);
+      return false;
     }
   }
-}
+};
 
-// Export instances
-export const realSolanaPayments = new RealSolanaPayments();
-export const fiatOnRamp = new FiatOnRamp();
-export const liquidityPool = new LiquidityPool();
+

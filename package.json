@@ -1,65 +1,39 @@
 {
-  "name": "@onusone/p2p-network",
-  "version": "0.1.0",
-  "description": "Decentralized discussion network with content decay and community curation",
-  "main": "index.js",
-  "scripts": {
-    "dev": "concurrently \"npm run node:dev\" \"npm run frontend:dev\"",
-    "node:dev": "cd node && npm run dev",
-    "node:start": "cd node && npm start",
-    "frontend:dev": "cd frontend && npm run dev",
-    "frontend:build": "cd frontend && npm run build",
-    "blockchain:dev": "cd blockchain && anchor test",
-    "blockchain:deploy": "cd blockchain && anchor deploy",
-    "install:all": "npm install && cd frontend && npm install && cd ../node && npm install && cd ../blockchain && npm install",
-    "test": "npm run test:node && npm run test:frontend",
-    "test:node": "cd node && npm test",
-    "test:frontend": "cd frontend && npm test",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "clean": "rm -rf node_modules frontend/node_modules node/node_modules blockchain/node_modules",
-    "reset": "npm run clean && npm run install:all",
-    "deploy:bootstrap": "node scripts/deploy-bootstrap.js",
-    "deploy:production": "node scripts/deploy-production.js",
-    "setup:env": "node scripts/setup-environment.js",
-    "test:p2p-network": "node scripts/test-p2p-network.js",
-    "monitor:network": "node scripts/monitor-network.js"
-  },
-  "keywords": [
-    "p2p",
-    "decentralized",
-    "social-network",
-    "web3",
-    "ipfs",
-    "libp2p",
-    "blockchain",
-    "community",
-    "discussion"
+  "name": "onusone-p2p",
+  "version": "1.0.0",
+  "description": "Decentralized P2P messaging network with Solana blockchain integration",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "node",
+    "contracts",
+    "shared"
   ],
-  "author": "OnusOne Community",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/onusone/p2p-network.git"
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:node\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:node": "cd node && npm run dev",
+    "build": "npm run build:frontend && npm run build:node",
+    "build:frontend": "cd frontend && npm run build",
+    "build:node": "cd node && npm run build",
+    "test": "npm run test:frontend && npm run test:node && npm run test:contracts",
+    "test:frontend": "cd frontend && npm run test",
+    "test:node": "cd node && npm run test",
+    "test:contracts": "cd contracts && npm run test",
+    "start": "concurrently \"npm run start:frontend\" \"npm run start:node\"",
+    "start:frontend": "cd frontend && npm run start",
+    "start:node": "cd node && npm run start",
+    "clean": "rm -rf node_modules && rm -rf */node_modules && rm -rf */dist && rm -rf */build",
+    "install:all": "npm install && npm run install:workspaces",
+    "install:workspaces": "cd frontend && npm install && cd ../node && npm install && cd ../contracts && npm install && cd ../shared && npm install"
   },
-  "bugs": {
-    "url": "https://github.com/onusone/p2p-network/issues"
-  },
-  "homepage": "https://onusone.network",
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^6.12.0",
-    "@typescript-eslint/parser": "^6.12.0",
-    "concurrently": "^7.6.0",
-    "eslint": "^8.54.0"
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.5"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
-  },
-  "dependencies": {
-    "@onusone/shared-components": "file:../shared-components",
-    "@pinata/sdk": "^2.1.0",
-    "@sentry/nextjs": "^10.2.0",
-    "@vercel/kv": "^3.0.0",
-    "axios": "^1.11.0"
   }
 }

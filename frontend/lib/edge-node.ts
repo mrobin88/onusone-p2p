@@ -46,15 +46,19 @@ export class EdgeNode {
   private startTime: number = 0;
   private earningsInterval?: NodeJS.Timeout;
   private syncInterval?: NodeJS.Timeout;
+  private websocket?: WebSocket;
+  private messageHandlers: Map<string, (message: any) => void> = new Map();
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
 
   constructor(walletAddress: string) {
     this.config = {
       walletAddress,
       nodeId: this.generateNodeId(),
       bootstrapNodes: [
-        'https://anchor1.onusone.network',
-        'https://anchor2.onusone.network', 
-        'https://anchor3.onusone.network'
+        'http://localhost:8888',
+        'http://localhost:8889',
+        'http://localhost:8890'
       ],
       minStake: 100, // 100 ONU minimum stake
       earningsRate: 0.4 // 40% of fees go to edge nodes
@@ -88,8 +92,8 @@ export class EdgeNode {
         throw new Error('Insufficient ONU tokens. Need at least 100 ONU to run a node.');
       }
 
-      // 2. Connect to bootstrap nodes
-      await this.connectToNetwork();
+      // 2. Establish WebSocket handshake with bootstrap nodes
+      await this.establishWebSocketConnection();
 
       // 3. Start message syncing
       this.startMessageSync();
@@ -151,43 +155,140 @@ export class EdgeNode {
   }
 
   /**
-   * Connect to the P2P network via bootstrap nodes
+   * Establish WebSocket handshake with bootstrap nodes
    */
-  private async connectToNetwork(): Promise<void> {
-    this.addLog('🔗 Connecting to network...');
-
-    for (const bootstrapNode of this.config.bootstrapNodes) {
+  private async establishWebSocketConnection(): Promise<void> {
+    this.addLog('🔗 Establishing WebSocket handshake...');
+    
+    let connected = false;
+    
+    for (const bootstrapUrl of this.config.bootstrapNodes) {
       try {
-        // Register with anchor node
-        const response = await fetch(`${bootstrapNode}/api/edge-nodes/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nodeId: this.config.nodeId,
-            walletAddress: this.config.walletAddress,
-            capabilities: {
-              storage: this.getAvailableStorage(),
-              bandwidth: this.getAvailableBandwidth()
-            }
-          })
-        });
-
-        if (response.ok) {
-          this.peers.add(bootstrapNode);
-          this.status.connectedPeers = this.peers.size;
-          this.addLog(`✅ Connected to ${bootstrapNode}`);
-        }
+        this.addLog(`🔌 Attempting WebSocket connection to ${bootstrapUrl}...`);
+        
+        // Convert HTTP URL to WebSocket URL
+        const wsUrl = bootstrapUrl.replace('http://', 'ws://').replace('https://', 'wss://');
+        const fullWsUrl = `${wsUrl}/ws/edge-node`;
+        
+        // Establish WebSocket connection with handshake
+        await this.connectWebSocket(fullWsUrl);
+        
+        this.addLog(`✅ WebSocket connected to ${bootstrapUrl}`);
+        this.peers.add(bootstrapUrl);
+        this.status.connectedPeers = this.peers.size;
+        connected = true;
+        break;
+        
       } catch (error) {
-        this.addLog(`⚠️ Failed to connect to ${bootstrapNode}: ${error}`);
+        this.addLog(`⚠️ Failed to connect to ${bootstrapUrl}: ${error}`);
       }
     }
-
-    if (this.peers.size === 0) {
-      throw new Error('Failed to connect to any bootstrap nodes');
+    
+    if (!connected) {
+      throw new Error('Failed to establish WebSocket connection to any bootstrap nodes');
     }
-
-    // Get peer list from connected anchor nodes
+    
+    // Discover other peers
     await this.discoverPeers();
+  }
+
+  private async connectWebSocket(wsUrl: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        this.websocket = new WebSocket(wsUrl);
+        
+        // WebSocket handshake protocol
+        this.websocket.onopen = () => {
+          this.addLog('🤝 WebSocket connection opened, sending handshake...');
+          
+          // Send initial handshake message
+          const handshake = {
+            type: 'HANDSHAKE',
+            data: {
+              nodeId: this.config.nodeId,
+              walletAddress: this.config.walletAddress,
+              endpoint: window.location.origin,
+              capabilities: ['message-relay', 'storage', 'bandwidth'],
+              version: '1.0.0',
+              timestamp: Date.now()
+            }
+          };
+          
+          this.websocket!.send(JSON.stringify(handshake));
+        };
+        
+        this.websocket.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            this.handleWebSocketMessage(message);
+          } catch (error) {
+            this.addLog(`❌ Failed to parse WebSocket message: ${error}`);
+          }
+        };
+        
+        this.websocket.onclose = (event) => {
+          this.addLog(`🔌 WebSocket connection closed: ${event.code} ${event.reason}`);
+          this.handleWebSocketClose();
+        };
+        
+        this.websocket.onerror = (error) => {
+          this.addLog(`❌ WebSocket error: ${error}`);
+          reject(error);
+        };
+        
+        // Wait for handshake response
+        const handshakeTimeout = setTimeout(() => {
+          reject(new Error('Handshake timeout'));
+        }, 10000);
+        
+        // Set up handshake response handler
+        this.messageHandlers.set('HANDSHAKE_ACK', (message) => {
+          clearTimeout(handshakeTimeout);
+          this.addLog('✅ Handshake completed successfully');
+          this.reconnectAttempts = 0;
+          resolve();
+        });
+        
+        this.messageHandlers.set('HANDSHAKE_REJECT', (message) => {
+          clearTimeout(handshakeTimeout);
+          reject(new Error(`Handshake rejected: ${message.data.reason}`));
+        });
+        
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private handleWebSocketMessage(message: any): void {
+    const { type, data } = message;
+    
+    // Log incoming message
+    this.addLog(`📨 Received: ${type}`);
+    
+    // Handle message based on type
+    const handler = this.messageHandlers.get(type);
+    if (handler) {
+      handler(message);
+    } else {
+      // Handle unknown message types
+      this.addLog(`❓ Unknown message type: ${type}`);
+    }
+  }
+
+  private handleWebSocketClose(): void {
+    if (this.isRunning && this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+      
+      this.addLog(`🔄 Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      
+      setTimeout(() => {
+        this.establishWebSocketConnection().catch(error => {
+          this.addLog(`❌ Reconnection failed: ${error}`);
+        });
+      }, delay);
+    }
   }
 
   /**
@@ -211,6 +312,43 @@ export class EdgeNode {
         this.addLog(`⚠️ Failed to discover peers from ${anchorNode}`);
       }
     }
+  }
+
+  /**
+   * Send a message to the network
+   */
+  async sendMessage(message: { type: string; data: any; target?: string }): Promise<void> {
+    if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+      throw new Error('WebSocket not connected');
+    }
+
+    const fullMessage = {
+      ...message,
+      sender: this.config.nodeId,
+      timestamp: Date.now(),
+      messageId: this.generateMessageId()
+    };
+
+    this.websocket.send(JSON.stringify(fullMessage));
+    this.addLog(`📤 Sent: ${message.type} to ${message.target || 'broadcast'}`);
+  }
+
+  /**
+   * Register a message handler
+   */
+  onMessage(type: string, handler: (message: any) => void): void {
+    this.messageHandlers.set(type, handler);
+  }
+
+  /**
+   * Get the current node ID
+   */
+  getNodeId(): string {
+    return this.config.nodeId;
+  }
+
+  private generateMessageId(): string {
+    return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   /**

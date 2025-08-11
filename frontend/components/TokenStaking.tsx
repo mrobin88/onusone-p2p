@@ -5,8 +5,8 @@ import { PublicKey } from '@solana/web3.js';
 import { realSolanaPayments, RealPayment } from '../lib/real-solana-payments';
 import Button from './Button';
 import { useToast } from './Toast';
-import { LoadingSpinner } from './LoadingSpinner';
-import { ProgressBar } from './ProgressBar';
+import LoadingSpinner from './LoadingSpinner';
+import ProgressBar from './ProgressBar';
 
 interface TokenStakingProps {
   postId: string;
@@ -257,17 +257,17 @@ export default function TokenStaking({
           variant="primary"
           className={className}
         >
-          {isStaking ? 'Staking...' : '💰 Stake Tokens'}
+          {isStaking ? 'Processing...' : '💰 Stake'}
         </Button>
       )}
 
       {/* Stake Modal */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-700">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-gray-900 rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto border border-gray-700 shadow-2xl shadow-black/50">
+            <div className="p-6 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-white">Stake ONU Tokens</h3>
+                <h3 className="text-xl font-semibold text-white">Stake ONU</h3>
                 <button
                   onClick={() => {
                     if (onClose) {
@@ -277,7 +277,7 @@ export default function TokenStaking({
                     }
                   }}
                   disabled={isStaking}
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
                   ✕
                 </button>
@@ -292,9 +292,9 @@ export default function TokenStaking({
                     <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="text-2xl">🔗</span>
                     </div>
-                    <h4 className="text-lg font-medium text-white mb-2">Connect Wallet</h4>
+                    <h4 className="text-lg font-medium text-white mb-2">Connect</h4>
                     <p className="text-gray-400 mb-6">
-                      Connect your Solana wallet to stake ONU tokens on this post.
+                      Link your wallet to stake on this post.
                     </p>
                   </div>
                   <Button onClick={handleConnectWallet} variant="primary">
@@ -330,7 +330,7 @@ export default function TokenStaking({
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm text-gray-400 mb-2">
-                          Amount (ONU tokens)
+                          Amount (ONU)
                         </label>
                         <input
                           type="number"
@@ -338,7 +338,7 @@ export default function TokenStaking({
                           onChange={(e) => setStakeAmount(Math.max(1, parseInt(e.target.value) || 1))}
                           min="1"
                           max={walletBalance?.onu || 1000000}
-                          className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-mono"
                         />
                       </div>
 
@@ -347,7 +347,11 @@ export default function TokenStaking({
                           <button
                             key={amount}
                             onClick={() => setStakeAmount(amount)}
-                            className="px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded text-white text-sm transition-colors"
+                            className={`px-3 py-2 border rounded text-white text-sm transition-all duration-200 font-mono ${
+                              stakeAmount === amount 
+                                ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/25' 
+                                : 'bg-gray-800 hover:bg-gray-700 border-gray-600 hover:border-gray-500'
+                            }`}
                           >
                             {amount}
                           </button>
@@ -357,28 +361,28 @@ export default function TokenStaking({
                   </div>
 
                   {/* Balance Information */}
-                  <div className="mb-6 p-4 bg-gray-800 rounded">
-                    <h5 className="text-sm font-medium text-white mb-3">Wallet Information</h5>
+                  <div className="mb-6 p-4 bg-gray-800 rounded border border-gray-700 hover:border-gray-600 transition-all duration-300">
+                    <h5 className="text-sm font-medium text-white mb-3">Wallet Status</h5>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">ONU Balance:</span>
-                        <span className="text-white">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-400">ONU:</span>
+                        <span className="text-white font-mono">
                           {walletBalance !== null ? `${walletBalance.onu.toFixed(2)}` : 'Loading...'}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">SOL Balance:</span>
-                        <span className="text-white">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-400">SOL:</span>
+                        <span className="text-white font-mono">
                           {walletBalance !== null ? `${walletBalance.sol.toFixed(4)}` : 'Loading...'}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Estimated Fee:</span>
-                        <span className="text-white">{estimatedFee} SOL</span>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-400">Fee:</span>
+                        <span className="text-white font-mono">{estimatedFee} SOL</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Current Post Stake:</span>
-                        <span className="text-white">{currentStake} ONU</span>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-400">Stake:</span>
+                        <span className="text-white font-mono">{currentStake} ONU</span>
                       </div>
                     </div>
                   </div>
@@ -387,10 +391,10 @@ export default function TokenStaking({
                   {!canStake && connected && (
                     <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded text-red-200 text-sm">
                       {walletBalance !== null && walletBalance.onu < stakeAmount && (
-                        <div>Insufficient ONU tokens. Need {stakeAmount}, have {walletBalance.onu.toFixed(2)}</div>
+                        <div>Insufficient ONU. Need {stakeAmount}, have {walletBalance.onu.toFixed(2)}</div>
                       )}
                       {walletBalance !== null && walletBalance.sol < estimatedFee && (
-                        <div>Insufficient SOL for transaction fees. Need {estimatedFee}, have {walletBalance.sol.toFixed(4)}</div>
+                        <div>Insufficient SOL for fees. Need {estimatedFee}, have {walletBalance.sol.toFixed(4)}</div>
                       )}
                     </div>
                   )}
@@ -406,7 +410,7 @@ export default function TokenStaking({
                         }
                       }}
                       variant="secondary"
-                      className="flex-1"
+                      className="flex-1 hover:bg-gray-700 transition-all duration-200"
                       disabled={isStaking}
                     >
                       Cancel
@@ -414,7 +418,7 @@ export default function TokenStaking({
                     <Button
                       onClick={handleStakeTokens}
                       variant="primary"
-                      className="flex-1"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/25 transition-all duration-200"
                       disabled={!canStake || isStaking}
                     >
                       {isStaking ? 'Processing...' : `Stake ${stakeAmount} ONU`}

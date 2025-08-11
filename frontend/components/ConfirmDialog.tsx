@@ -166,8 +166,8 @@ export const StakingConfirmDialog: React.FC<{
   <ConfirmDialog
     isOpen={isOpen}
     title="Confirm Stake"
-    message={`Are you sure you want to stake ${amount} ONU tokens on this post? This action cannot be undone.`}
-    confirmText="Stake ONU"
+    message={`Stake ${amount} ONU on this post?`}
+    confirmText="Stake"
     cancelText="Cancel"
     type="warning"
     onConfirm={onConfirm}
@@ -182,10 +182,10 @@ export const NodeStartConfirmDialog: React.FC<{
 }> = ({ isOpen, onConfirm, onCancel }) => (
   <ConfirmDialog
     isOpen={isOpen}
-    title="Start P2P Node"
-    message="Starting your node will begin earning ONU tokens based on uptime and network activity. Continue?"
-    confirmText="Start Earning"
-    cancelText="Not Now"
+    title="Start Node"
+    message="Begin earning ONU based on uptime and network activity?"
+    confirmText="Start"
+    cancelText="Later"
     type="success"
     onConfirm={onConfirm}
     onCancel={onCancel}
@@ -199,9 +199,9 @@ export const LogoutConfirmDialog: React.FC<{
 }> = ({ isOpen, onConfirm, onCancel }) => (
   <ConfirmDialog
     isOpen={isOpen}
-    title="Confirm Logout"
-    message="Are you sure you want to logout? Your node will continue running if it's active."
-    confirmText="Logout"
+    title="Logout"
+    message="Exit the network? Your node continues if active."
+    confirmText="Exit"
     cancelText="Stay"
     type="info"
     onConfirm={onConfirm}

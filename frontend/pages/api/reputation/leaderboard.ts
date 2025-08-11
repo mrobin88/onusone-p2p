@@ -16,15 +16,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const limitNum = Math.min(parseInt(limit as string) || 50, 100); // Max 100 users
     const offsetNum = parseInt(offset as string) || 0;
 
-    // Get top users from leaderboard
-    const leaderboardData = await kv.zrevrange(
+    // Get top users from leaderboard (reverse order)
+    const leaderboardData = await kv.zrange(
       'reputation:leaderboard', 
       offsetNum, 
       offsetNum + limitNum - 1, 
-      { withScores: true }
+      { withScores: true, rev: true }
     );
 
-    const leaderboard = [];
+    const leaderboard: any[] = [];
     for (let i = 0; i < leaderboardData.length; i += 2) {
       const userId = leaderboardData[i] as string;
       const score = leaderboardData[i + 1] as number;
@@ -130,8 +130,8 @@ async function calculateTrendingUsers(): Promise<any[]> {
     const recentThreshold = Date.now() - (24 * 60 * 60 * 1000); // Last 24 hours
     
     // Get top 10 users and check their recent activity
-    const topUsers = await kv.zrevrange('reputation:leaderboard', 0, 19, { withScores: true });
-    const trending = [];
+    const topUsers = await kv.zrange('reputation:leaderboard', 0, 19, { withScores: true, rev: true });
+          const trending: any[] = [];
     
     for (let i = 0; i < Math.min(topUsers.length, 20); i += 2) {
       const userId = topUsers[i] as string;

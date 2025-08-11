@@ -7,9 +7,9 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletAuth } from './WalletAuth';
 import { useToast } from './Toast';
-import { LoadingSpinner } from './LoadingSpinner';
-import { ProgressBar } from './ProgressBar';
-import { ConfirmDialog } from './ConfirmDialog';
+import LoadingSpinner from './LoadingSpinner';
+import ProgressBar from './ProgressBar';
+import ConfirmDialog from './ConfirmDialog';
 import { UptimePayouts } from '../lib/uptime-payouts';
 
 interface EdgeNode {

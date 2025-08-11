@@ -3,748 +3,375 @@
  * Handles libp2p networking, IPFS storage, and cryptographic operations
  */
 
-import CryptoJS from 'crypto-js';
-import { Message, NetworkMessage, NetworkMessageType } from './types';
+import { createLibp2p, Libp2p } from 'libp2p';
+import { webRTC } from '@libp2p/webrtc';
+import { tcp } from '@libp2p/tcp';
+import { webSockets } from '@libp2p/websockets';
+import { noise } from '@libp2p/noise';
+import { peerIdFromString } from '@libp2p/peer-id';
+import { Peer, Message, P2PConnection, LibP2PConfig } from './types';
+import { EventEmitter } from 'events';
 
-// Network Configuration
-export const P2P_CONFIG = {
-  // Network settings
-  DEFAULT_PORT: 8887,
-  BOOTSTRAP_NODES: [
-    '/dns4/bootstrap1.onusone.network/tcp/8887/p2p/12D3KooWBootstrap1',
-    '/dns4/bootstrap2.onusone.network/tcp/8887/p2p/12D3KooWBootstrap2'
-  ],
-  
-  // IPFS settings
-  IPFS_API_URL: 'http://localhost:5001',
-  CONTENT_REPLICATION_FACTOR: 3,
-  
-  // Message limits
-  MAX_MESSAGE_SIZE: 10000,        // 10KB per message
-  MAX_MESSAGES_PER_SECOND: 10,
-  MAX_STORAGE_PER_NODE: 100,      // 100GB default
-  
-  // Crypto settings
-  SIGNATURE_ALGORITHM: 'ECDSA',
-  HASH_ALGORITHM: 'SHA256',
-  
-  // Reputation settings
-  INITIAL_REPUTATION: 100,
-  MAX_REPUTATION: 1000,
-  MIN_REPUTATION: 0,
-  REPUTATION_DECAY_RATE: 0.1,     // Daily decay rate
-  
-  // Content decay settings
-  INITIAL_DECAY_SCORE: 100,
-  DECAY_RATE_PER_HOUR: 2,
-  ENGAGEMENT_BOOST: 10,
-  MIN_DECAY_SCORE: 0
-};
+export class P2PNetwork extends EventEmitter {
+  private libp2p: Libp2p;
+  private config: LibP2PConfig;
+  private peers: Map<string, Peer> = new Map();
+  private messageQueue: Message[] = [];
+  private isConnected: boolean = false;
+  private reconnectInterval?: NodeJS.Timeout;
+  private healthCheckInterval?: NodeJS.Timeout;
 
-/**
- * User Reputation Management
- */
-export class ReputationManager {
-  private reputationScores: Map<string, number> = new Map();
-  private lastUpdateTime: Map<string, Date> = new Map();
-  
-  /**
-   * Get user's current reputation score
-   */
-  getReputation(userId: string): number {
-    this.applyDecay(userId);
-    return this.reputationScores.get(userId) || P2P_CONFIG.INITIAL_REPUTATION;
+  constructor(config: LibP2PConfig) {
+    super();
+    this.config = config;
   }
-  
-  /**
-   * Award reputation points for positive actions
-   */
-  awardReputation(userId: string, points: number, reason: string): void {
-    const current = this.getReputation(userId);
-    const newScore = Math.min(current + points, P2P_CONFIG.MAX_REPUTATION);
-    
-    this.reputationScores.set(userId, newScore);
-    this.lastUpdateTime.set(userId, new Date());
-    
-    console.log(`Awarded ${points} reputation to ${userId} for ${reason}. New score: ${newScore}`);
-  }
-  
-  /**
-   * Penalize reputation for negative actions
-   */
-  penalizeReputation(userId: string, points: number, reason: string): void {
-    const current = this.getReputation(userId);
-    const newScore = Math.max(current - points, P2P_CONFIG.MIN_REPUTATION);
-    
-    this.reputationScores.set(userId, newScore);
-    this.lastUpdateTime.set(userId, new Date());
-    
-    console.log(`Penalized ${points} reputation from ${userId} for ${reason}. New score: ${newScore}`);
-  }
-  
-  /**
-   * Apply natural decay to reputation over time
-   */
-  private applyDecay(userId: string): void {
-    const lastUpdate = this.lastUpdateTime.get(userId);
-    if (!lastUpdate) return;
-    
-    const now = new Date();
-    const daysSinceUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24);
-    
-    if (daysSinceUpdate >= 1) {
-      const current = this.reputationScores.get(userId) || P2P_CONFIG.INITIAL_REPUTATION;
-      const decay = current * P2P_CONFIG.REPUTATION_DECAY_RATE * daysSinceUpdate;
-      const newScore = Math.max(current - decay, P2P_CONFIG.MIN_REPUTATION);
-      
-      this.reputationScores.set(userId, newScore);
-      this.lastUpdateTime.set(userId, now);
-    }
-  }
-  
-  /**
-   * Get top users by reputation
-   */
-  getTopUsers(limit: number = 10): { userId: string; reputation: number }[] {
-    const users = Array.from(this.reputationScores.entries())
-      .map(([userId, reputation]) => ({ userId, reputation: this.getReputation(userId) }))
-      .sort((a, b) => b.reputation - a.reputation)
-      .slice(0, limit);
-    
-    return users;
-  }
-}
 
-/**
- * Content Decay Engine
- */
-export class ContentDecayEngine {
-  private decayScores: Map<string, number> = new Map();
-  private lastUpdateTime: Map<string, Date> = new Map();
-  private engagementCounts: Map<string, number> = new Map();
-  
   /**
-   * Initialize decay score for new content
+   * Initialize and start the P2P network
    */
-  initializeContent(contentId: string): void {
-    this.decayScores.set(contentId, P2P_CONFIG.INITIAL_DECAY_SCORE);
-    this.lastUpdateTime.set(contentId, new Date());
-    this.engagementCounts.set(contentId, 0);
-  }
-  
-  /**
-   * Get current decay score for content
-   */
-  getDecayScore(contentId: string): number {
-    this.applyDecay(contentId);
-    return this.decayScores.get(contentId) || 0;
-  }
-  
-  /**
-   * Record engagement with content (likes, comments, shares)
-   */
-  recordEngagement(contentId: string, engagementType: 'like' | 'comment' | 'share'): void {
-    const current = this.getDecayScore(contentId);
-    const engagementBoost = this.calculateEngagementBoost(engagementType);
-    
-    const newScore = Math.min(current + engagementBoost, P2P_CONFIG.INITIAL_DECAY_SCORE);
-    this.decayScores.set(contentId, newScore);
-    this.lastUpdateTime.set(contentId, new Date());
-    
-    const currentEngagement = this.engagementCounts.get(contentId) || 0;
-    this.engagementCounts.set(contentId, currentEngagement + 1);
-  }
-  
-  /**
-   * Apply time-based decay to content
-   */
-  private applyDecay(contentId: string): void {
-    const lastUpdate = this.lastUpdateTime.get(contentId);
-    if (!lastUpdate) return;
-    
-    const now = new Date();
-    const hoursSinceUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60);
-    
-    if (hoursSinceUpdate >= 1) {
-      const current = this.decayScores.get(contentId) || 0;
-      const decay = P2P_CONFIG.DECAY_RATE_PER_HOUR * hoursSinceUpdate;
-      const newScore = Math.max(current - decay, P2P_CONFIG.MIN_DECAY_SCORE);
-      
-      this.decayScores.set(contentId, newScore);
-      this.lastUpdateTime.set(contentId, now);
-    }
-  }
-  
-  /**
-   * Calculate engagement boost based on type
-   */
-  private calculateEngagementBoost(engagementType: 'like' | 'comment' | 'share'): number {
-    switch (engagementType) {
-      case 'like':
-        return P2P_CONFIG.ENGAGEMENT_BOOST * 0.5;
-      case 'comment':
-        return P2P_CONFIG.ENGAGEMENT_BOOST * 1.0;
-      case 'share':
-        return P2P_CONFIG.ENGAGEMENT_BOOST * 1.5;
-      default:
-        return 0;
-    }
-  }
-  
-  /**
-   * Get content sorted by decay score (most valuable first)
-   */
-  getContentByDecayScore(contentIds: string[]): { contentId: string; score: number }[] {
-    return contentIds
-      .map(contentId => ({ contentId, score: this.getDecayScore(contentId) }))
-      .filter(item => item.score > P2P_CONFIG.MIN_DECAY_SCORE)
-      .sort((a, b) => b.score - a.score);
-  }
-  
-  /**
-   * Cleanup fully decayed content
-   */
-  cleanupDecayedContent(): string[] {
-    const decayedContent: string[] = [];
-    
-    for (const [contentId, score] of this.decayScores.entries()) {
-      if (this.getDecayScore(contentId) <= P2P_CONFIG.MIN_DECAY_SCORE) {
-        decayedContent.push(contentId);
-        this.decayScores.delete(contentId);
-        this.lastUpdateTime.delete(contentId);
-        this.engagementCounts.delete(contentId);
-      }
-    }
-    
-    return decayedContent;
-  }
-}
-
-/**
- * Generate cryptographic hash for content
- */
-export function generateContentHash(content: string): string {
-  return CryptoJS.SHA256(content).toString();
-}
-
-/**
- * Create a network message with signature
- */
-export function createNetworkMessage(
-  type: NetworkMessageType,
-  payload: any,
-  senderId: string,
-  privateKey?: string // In real implementation, use proper key management
-): NetworkMessage {
-  const message: NetworkMessage = {
-    type,
-    payload,
-    timestamp: new Date(),
-    senderId,
-    signature: '',
-    version: 1
-  };
-  
-  // Create message signature (simplified - use proper cryptographic library in production)
-  const messageString = JSON.stringify({
-    type: message.type,
-    payload: message.payload,
-    timestamp: message.timestamp.toISOString(),
-    senderId: message.senderId,
-    version: message.version
-  });
-  
-  message.signature = generateContentHash(messageString + (privateKey || 'dev-key'));
-  
-  return message;
-}
-
-/**
- * Verify network message signature
- */
-export function verifyNetworkMessage(message: NetworkMessage, publicKey?: string): boolean {
-  // Simplified verification - implement proper signature verification in production
-  const messageString = JSON.stringify({
-    type: message.type,
-    payload: message.payload,
-    timestamp: message.timestamp,
-    senderId: message.senderId,
-    version: message.version
-  });
-  
-  const expectedSignature = generateContentHash(messageString + (publicKey || 'dev-key'));
-  return message.signature === expectedSignature;
-}
-
-/**
- * IPFS Content Management
- */
-export class IPFSManager {
-  private apiUrl: string;
-  
-  constructor(apiUrl: string = P2P_CONFIG.IPFS_API_URL) {
-    this.apiUrl = apiUrl;
-  }
-  
-  /**
-   * Store content on IPFS and return hash
-   */
-  async storeContent(content: string): Promise<string> {
+  async start(): Promise<void> {
     try {
-      // In production, use proper IPFS client library
-      const formData = new FormData();
-      formData.append('file', new Blob([content]));
-      
-      const response = await fetch(`${this.apiUrl}/api/v0/add`, {
-        method: 'POST',
-        body: formData
-      });
-      
-      const result = await response.json() as { Hash: string };
-      return result.Hash;
-    } catch (error) {
-      console.error('Failed to store content on IPFS:', error);
-      // Fallback to content hash for development
-      return generateContentHash(content);
-    }
-  }
-  
-  /**
-   * Retrieve content from IPFS by hash
-   */
-  async retrieveContent(hash: string): Promise<string | null> {
-    try {
-      const response = await fetch(`${this.apiUrl}/api/v0/cat?arg=${hash}`);
-      return await response.text();
-    } catch (error) {
-      console.error('Failed to retrieve content from IPFS:', error);
-      return null;
-    }
-  }
-  
-  /**
-   * Pin content to ensure persistence
-   */
-  async pinContent(hash: string): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.apiUrl}/api/v0/pin/add?arg=${hash}`, {
-        method: 'POST'
-      });
-      return response.ok;
-    } catch (error) {
-      console.error('Failed to pin content:', error);
-      return false;
-    }
-  }
-}
-
-/**
- * Message Distribution Manager
- */
-export class MessageDistributor {
-  private ipfs: IPFSManager;
-  private connectedPeers: Set<string> = new Set();
-  
-  constructor() {
-    this.ipfs = new IPFSManager();
-  }
-  
-  /**
-   * Distribute a message across the P2P network
-   */
-  async distributeMessage(message: Message): Promise<{
-    ipfsHash: string;
-    replicatedNodes: string[];
-    success: boolean;
-  }> {
-    try {
-      // Store message content on IPFS
-      const messageContent = JSON.stringify({
-        content: message.content,
-        metadata: {
-          id: message.id,
-          authorId: message.authorId,
-          boardType: message.boardType,
-          createdAt: message.createdAt.toISOString()
+      // Create libp2p instance with configured transports and protocols
+      this.libp2p = await createLibp2p({
+        peerId: await peerIdFromString(this.config.peerId),
+        addresses: {
+          listen: this.config.listenAddresses
+        },
+        transports: [
+          ...(this.config.enableWebRTC ? [webRTC()] : []),
+          ...(this.config.enableTCP ? [tcp()] : []),
+          ...(this.config.enableWebSockets ? [webSockets()] : [])
+        ],
+        connectionEncryption: [noise()],
+        connectionManager: {
+          maxConnections: this.config.maxConnections,
+          minConnections: 1
         }
       });
-      
-      const ipfsHash = await this.ipfs.storeContent(messageContent);
-      
-      // Create network distribution message
-      const networkMessage = createNetworkMessage(
-        NetworkMessageType.MESSAGE_CREATE,
-        {
-          messageId: message.id,
-          ipfsHash,
-          boardType: message.boardType,
-          decayScore: message.decayScore
-        },
-        message.authorId
-      );
-      
-      // Distribute to connected peers (simplified)
-      const replicatedNodes = await this.replicateToNodes(networkMessage);
-      
-      return {
-        ipfsHash,
-        replicatedNodes,
-        success: true
-      };
+
+      // Set up event listeners
+      this.setupEventListeners();
+
+      // Start the libp2p node
+      await this.libp2p.start();
+
+      // Connect to bootstrap peers
+      await this.connectToBootstrapPeers();
+
+      // Start health monitoring
+      this.startHealthMonitoring();
+
+      this.isConnected = true;
+      this.emit('connected');
+      this.emit('status', this.getConnectionStatus());
+
     } catch (error) {
-      console.error('Failed to distribute message:', error);
-      return {
-        ipfsHash: '',
-        replicatedNodes: [],
-        success: false
-      };
+      this.emit('error', error);
+      throw error;
     }
   }
-  
+
   /**
-   * Replicate message to multiple nodes for redundancy
+   * Stop the P2P network
    */
-  private async replicateToNodes(networkMessage: NetworkMessage): Promise<string[]> {
-    const replicatedNodes: string[] = [];
-    const targetReplicas = Math.min(P2P_CONFIG.CONTENT_REPLICATION_FACTOR, this.connectedPeers.size);
-    
-    // Select nodes for replication (simplified - use proper peer selection in production)
-    const selectedPeers = Array.from(this.connectedPeers).slice(0, targetReplicas);
-    
-    for (const peerId of selectedPeers) {
+  async stop(): Promise<void> {
+    try {
+      if (this.reconnectInterval) {
+        clearInterval(this.reconnectInterval);
+      }
+      if (this.healthCheckInterval) {
+        clearInterval(this.healthCheckInterval);
+      }
+
+      if (this.libp2p) {
+        await this.libp2p.stop();
+      }
+
+      this.isConnected = false;
+      this.emit('disconnected');
+      this.emit('status', this.getConnectionStatus());
+
+    } catch (error) {
+      this.emit('error', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Connect to a specific peer
+   */
+  async connectToPeer(peerId: string, address: string, port: number): Promise<boolean> {
+    try {
+      const peer = await peerIdFromString(peerId);
+      const multiaddr = `${address}/tcp/${port}/p2p/${peerId}`;
+      
+      await this.libp2p.dial(multiaddr);
+      
+      // Add to peer list
+      const peerInfo: Peer = {
+        id: peerId,
+        address,
+        port,
+        lastSeen: new Date(),
+        reputation: 50, // Default reputation
+        isConnected: true
+      };
+      
+      this.peers.set(peerId, peerInfo);
+      this.emit('peerConnected', peerInfo);
+      
+      return true;
+    } catch (error) {
+      this.emit('error', `Failed to connect to peer ${peerId}: ${error}`);
+      return false;
+    }
+  }
+
+  /**
+   * Disconnect from a peer
+   */
+  async disconnectFromPeer(peerId: string): Promise<boolean> {
+    try {
+      const peer = this.peers.get(peerId);
+      if (peer) {
+        peer.isConnected = false;
+        this.peers.delete(peerId);
+        this.emit('peerDisconnected', peerId);
+      }
+      
+      return true;
+    } catch (error) {
+      this.emit('error', `Failed to disconnect from peer ${peerId}: ${error}`);
+      return false;
+    }
+  }
+
+  /**
+   * Broadcast a message to all connected peers
+   */
+  async broadcastMessage(message: Message): Promise<number> {
+    if (!this.isConnected) {
+      throw new Error('P2P network not connected');
+    }
+
+    try {
+      const messageData = JSON.stringify({
+        type: 'message',
+        payload: message,
+        timestamp: new Date().toISOString(),
+        sender: this.config.peerId
+      });
+
+      let broadcastCount = 0;
+      const connectedPeers = Array.from(this.peers.values()).filter(p => p.isConnected);
+
+      for (const peer of connectedPeers) {
+        try {
+          const peerId = await peerIdFromString(peer.id);
+          await this.libp2p.dial(peerId);
+          
+          // Send message via libp2p pubsub or direct connection
+          // This is a simplified implementation - in production you'd use pubsub
+          broadcastCount++;
+        } catch (error) {
+          console.warn(`Failed to broadcast to peer ${peer.id}:`, error);
+        }
+      }
+
+      // Add to local message queue
+      this.messageQueue.push(message);
+      
+      this.emit('messageBroadcast', message, broadcastCount);
+      return broadcastCount;
+
+    } catch (error) {
+      this.emit('error', `Failed to broadcast message: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Send a direct message to a specific peer
+   */
+  async sendDirectMessage(peerId: string, message: Message): Promise<boolean> {
+    try {
+      const peer = this.peers.get(peerId);
+      if (!peer || !peer.isConnected) {
+        throw new Error(`Peer ${peerId} not connected`);
+      }
+
+      const messageData = JSON.stringify({
+        type: 'direct_message',
+        payload: message,
+        timestamp: new Date().toISOString(),
+        sender: this.config.peerId,
+        recipient: peerId
+      });
+
+      const peerIdObj = await peerIdFromString(peerId);
+      await this.libp2p.dial(peerIdObj);
+      
+      // Send via direct connection
+      // Simplified implementation - in production you'd use a custom protocol
+      
+      this.emit('directMessageSent', peerId, message);
+      return true;
+
+    } catch (error) {
+      this.emit('error', `Failed to send direct message to ${peerId}: ${error}`);
+      return false;
+    }
+  }
+
+  /**
+   * Get current connection status
+   */
+  getConnectionStatus(): P2PConnection {
+    const peerCount = this.peers.size;
+    let networkHealth: P2PConnection['networkHealth'] = 'offline';
+
+    if (this.isConnected) {
+      if (peerCount >= 10) networkHealth = 'excellent';
+      else if (peerCount >= 5) networkHealth = 'good';
+      else if (peerCount >= 1) networkHealth = 'poor';
+      else networkHealth = 'offline';
+    }
+
+    return {
+      isConnected: this.isConnected,
+      peerCount,
+      networkHealth,
+      lastMessage: this.messageQueue.length > 0 ? this.messageQueue[this.messageQueue.length - 1].timestamp : new Date(),
+      error: undefined
+    };
+  }
+
+  /**
+   * Get list of connected peers
+   */
+  getConnectedPeers(): Peer[] {
+    return Array.from(this.peers.values()).filter(p => p.isConnected);
+  }
+
+  /**
+   * Get peer by ID
+   */
+  getPeer(peerId: string): Peer | undefined {
+    return this.peers.get(peerId);
+  }
+
+  /**
+   * Update peer reputation
+   */
+  updatePeerReputation(peerId: string, reputationChange: number): void {
+    const peer = this.peers.get(peerId);
+    if (peer) {
+      peer.reputation = Math.max(0, Math.min(100, peer.reputation + reputationChange));
+      peer.lastSeen = new Date();
+      this.emit('peerReputationUpdated', peerId, peer.reputation);
+    }
+  }
+
+  /**
+   * Set up libp2p event listeners
+   */
+  private setupEventListeners(): void {
+    this.libp2p.addEventListener('peer:connect', (evt) => {
+      const peerId = evt.detail.remotePeer.toString();
+      this.emit('peerConnected', peerId);
+    });
+
+    this.libp2p.addEventListener('peer:disconnect', (evt) => {
+      const peerId = evt.detail.remotePeer.toString();
+      this.emit('peerDisconnected', peerId);
+    });
+
+    this.libp2p.addEventListener('connection:open', (evt) => {
+      const peerId = evt.detail.remotePeer.toString();
+      this.emit('connectionOpened', peerId);
+    });
+
+    this.libp2p.addEventListener('connection:close', (evt) => {
+      const peerId = evt.detail.remotePeer.toString();
+      this.emit('connectionClosed', peerId);
+    });
+  }
+
+  /**
+   * Connect to bootstrap peers
+   */
+  private async connectToBootstrapPeers(): Promise<void> {
+    for (const bootstrapPeer of this.config.bootstrapPeers) {
       try {
-        // In production, use libp2p to send message to peer
-        await this.sendToPeer(peerId, networkMessage);
-        replicatedNodes.push(peerId);
+        await this.connectToPeer(bootstrapPeer, 'localhost', 8888);
       } catch (error) {
-        console.warn(`Failed to replicate to peer ${peerId}:`, error);
+        console.warn(`Failed to connect to bootstrap peer ${bootstrapPeer}:`, error);
       }
     }
-    
-    return replicatedNodes;
   }
-  
+
   /**
-   * Send message to specific peer
+   * Start health monitoring
    */
-  private async sendToPeer(peerId: string, message: NetworkMessage): Promise<void> {
-    // Simplified implementation - use libp2p streams in production
-    console.log(`Sending message to peer ${peerId}:`, message.type);
+  private startHealthMonitoring(): void {
+    this.healthCheckInterval = setInterval(async () => {
+      try {
+        // Check network health
+        const status = this.getConnectionStatus();
+        
+        // Update peer statuses
+        for (const [peerId, peer] of this.peers) {
+          if (peer.isConnected) {
+            // Simple health check - in production you'd ping peers
+            peer.lastSeen = new Date();
+          }
+        }
+
+        // Clean up disconnected peers
+        for (const [peerId, peer] of this.peers) {
+          const timeSinceLastSeen = Date.now() - peer.lastSeen.getTime();
+          if (timeSinceLastSeen > 300000) { // 5 minutes
+            peer.isConnected = false;
+            this.emit('peerDisconnected', peerId);
+          }
+        }
+
+        this.emit('status', status);
+      } catch (error) {
+        this.emit('error', `Health check failed: ${error}`);
+      }
+    }, 30000); // Every 30 seconds
   }
-  
+
   /**
-   * Add peer to connected peers list
+   * Handle automatic reconnection
    */
-  addPeer(peerId: string): void {
-    this.connectedPeers.add(peerId);
+  private startReconnection(): void {
+    this.reconnectInterval = setInterval(async () => {
+      if (!this.isConnected && this.peers.size > 0) {
+        try {
+          await this.start();
+        } catch (error) {
+          console.warn('Reconnection attempt failed:', error);
+        }
+      }
+    }, 60000); // Every minute
   }
-  
+
   /**
-   * Remove peer from connected peers list
+   * Get network metrics
    */
-  removePeer(peerId: string): void {
-    this.connectedPeers.delete(peerId);
-  }
-  
-  /**
-   * Get network statistics
-   */
-  getNetworkStats() {
+  getNetworkMetrics() {
+    const connectedPeers = this.getConnectedPeers();
+    const totalReputation = connectedPeers.reduce((sum, p) => sum + p.reputation, 0);
+    const averageReputation = connectedPeers.length > 0 ? totalReputation / connectedPeers.length : 0;
+
     return {
-      connectedPeers: this.connectedPeers.size,
-      replicationFactor: P2P_CONFIG.CONTENT_REPLICATION_FACTOR
+      totalPeers: this.peers.size,
+      connectedPeers: connectedPeers.length,
+      averageReputation,
+      messageQueueSize: this.messageQueue.length,
+      uptime: this.isConnected ? Date.now() - (this.libp2p?.startTime || Date.now()) : 0
     };
   }
 }
-
-/**
- * Content Synchronization Manager
- */
-export class ContentSynchronizer {
-  private ipfs: IPFSManager;
-  private localCache: Map<string, any> = new Map();
-  private decayEngine: ContentDecayEngine;
-  
-  constructor() {
-    this.ipfs = new IPFSManager();
-    this.decayEngine = new ContentDecayEngine();
-  }
-  
-  /**
-   * Sync messages for a specific board
-   */
-  async syncBoardMessages(boardType: string, lastSyncTime?: Date): Promise<Message[]> {
-    try {
-      // Request latest messages from network peers
-      const syncRequest = createNetworkMessage(
-        NetworkMessageType.CONTENT_REQUEST,
-        {
-          boardType,
-          lastSyncTime: lastSyncTime?.toISOString(),
-          requestId: generateContentHash(Date.now().toString())
-        },
-        'local-node'
-      );
-      
-      // In production, broadcast to network and collect responses
-      const messages = await this.collectSyncResponses(syncRequest);
-      
-      // Validate and cache messages
-      const validMessages = messages.filter(msg => this.validateMessage(msg));
-      validMessages.forEach(msg => {
-        this.localCache.set(msg.id, msg);
-      });
-      
-      return validMessages;
-    } catch (error) {
-      console.error('Failed to sync board messages:', error);
-      return [];
-    }
-  }
-  
-  /**
-   * Validate message integrity and signatures
-   */
-  private validateMessage(message: Message): boolean {
-    // Check required fields
-    if (!message.id || !message.content || !message.authorId) {
-      return false;
-    }
-    
-    // Verify content hash matches IPFS hash
-    const expectedHash = generateContentHash(message.content);
-    if (message.contentHash !== expectedHash) {
-      return false;
-    }
-    
-    // Verify message signature (simplified)
-    // In production, use proper cryptographic verification
-    
-    return true;
-  }
-  
-  /**
-   * Collect sync responses from network
-   */
-  private async collectSyncResponses(syncRequest: NetworkMessage): Promise<Message[]> {
-    // Simplified implementation - in production, use libp2p pubsub or DHT queries
-    return [];
-  }
-  
-  /**
-   * Get cached message by ID
-   */
-  getCachedMessage(messageId: string): Message | null {
-    return this.localCache.get(messageId) || null;
-  }
-  
-  /**
-   * Record engagement with content
-   */
-  recordEngagement(messageId: string, engagementType: 'like' | 'comment' | 'share'): void {
-    this.decayEngine.recordEngagement(messageId, engagementType);
-  }
-  
-  /**
-   * Get messages sorted by decay score
-   */
-  getMessagesByDecayScore(messageIds: string[]): Message[] {
-    const sortedContent = this.decayEngine.getContentByDecayScore(messageIds);
-    return sortedContent
-      .map((item: { contentId: string; score: number }) => this.getCachedMessage(item.contentId))
-      .filter((msg: Message | null) => msg !== null) as Message[];
-  }
-  
-  /**
-   * Clear old cache entries based on decay scores
-   */
-  cleanupCache(): void {
-    const decayedContent = this.decayEngine.cleanupDecayedContent();
-    decayedContent.forEach((contentId: string) => {
-      this.localCache.delete(contentId);
-    });
-    
-    console.log(`Cleaned up ${decayedContent.length} decayed messages`);
-  }
-}
-
-/**
- * Network Health Monitor
- */
-export class NetworkHealthMonitor {
-  private healthMetrics = {
-    connectedPeers: 0,
-    messageLatency: 0,
-    storageUsage: 0,
-    syncStatus: 'healthy' as 'healthy' | 'degraded' | 'offline'
-  };
-  
-  /**
-   * Get current network health
-   */
-  getHealth() {
-    return { ...this.healthMetrics };
-  }
-  
-  /**
-   * Update peer count
-   */
-  updatePeerCount(count: number): void {
-    this.healthMetrics.connectedPeers = count;
-    this.updateSyncStatus();
-  }
-  
-  /**
-   * Update message latency
-   */
-  updateLatency(latency: number): void {
-    this.healthMetrics.messageLatency = latency;
-    this.updateSyncStatus();
-  }
-  
-  /**
-   * Update storage usage
-   */
-  updateStorageUsage(usage: number): void {
-    this.healthMetrics.storageUsage = usage;
-  }
-  
-  /**
-   * Update sync status based on metrics
-   */
-  private updateSyncStatus(): void {
-    if (this.healthMetrics.connectedPeers === 0) {
-      this.healthMetrics.syncStatus = 'offline';
-    } else if (this.healthMetrics.connectedPeers < 3 || this.healthMetrics.messageLatency > 5000) {
-      this.healthMetrics.syncStatus = 'degraded';
-    } else {
-      this.healthMetrics.syncStatus = 'healthy';
-    }
-  }
-}
-
-/**
- * Unified P2P Service
- */
-export class P2PService {
-  private messageDistributor: MessageDistributor;
-  private contentSynchronizer: ContentSynchronizer;
-  private networkHealthMonitor: NetworkHealthMonitor;
-  private reputationManager: ReputationManager;
-  private decayEngine: ContentDecayEngine;
-  
-  constructor() {
-    this.messageDistributor = new MessageDistributor();
-    this.contentSynchronizer = new ContentSynchronizer();
-    this.networkHealthMonitor = new NetworkHealthMonitor();
-    this.reputationManager = new ReputationManager();
-    this.decayEngine = new ContentDecayEngine();
-    
-    // Start cleanup interval
-    setInterval(() => {
-      this.contentSynchronizer.cleanupCache();
-    }, 60000); // Cleanup every minute
-  }
-  
-  /**
-   * Initialize P2P service
-   */
-  async initialize(): Promise<void> {
-    console.log('Initializing P2P Service...');
-    // In production, initialize libp2p node, connect to bootstrap peers
-  }
-  
-  /**
-   * Distribute a message
-   */
-  async distributeMessage(message: Message): Promise<boolean> {
-    const result = await this.messageDistributor.distributeMessage(message);
-    return result.success;
-  }
-  
-  /**
-   * Sync board content
-   */
-  async syncBoard(boardType: string): Promise<Message[]> {
-    return await this.contentSynchronizer.syncBoardMessages(boardType);
-  }
-  
-  /**
-   * Record user engagement
-   */
-  recordEngagement(messageId: string, userId: string, engagementType: 'like' | 'comment' | 'share'): void {
-    this.contentSynchronizer.recordEngagement(messageId, engagementType);
-    this.reputationManager.awardReputation(userId, 1, `${engagementType}_engagement`);
-  }
-  
-  /**
-   * Get network status
-   */
-  getNetworkStatus() {
-    const health = this.networkHealthMonitor.getHealth();
-    const networkStats = this.messageDistributor.getNetworkStats();
-    
-    return {
-      ...health,
-      ...networkStats
-    };
-  }
-  
-  /**
-   * Get user reputation
-   */
-  getUserReputation(userId: string): number {
-    return this.reputationManager.getReputation(userId);
-  }
-  
-  /**
-   * Get content by decay score
-   */
-  getContentByRelevance(messageIds: string[]): Message[] {
-    return this.contentSynchronizer.getMessagesByDecayScore(messageIds);
-  }
-  
-  /**
-   * Award reputation to user
-   */
-  awardReputation(userId: string, points: number, reason: string): void {
-    this.reputationManager.awardReputation(userId, points, reason);
-  }
-  
-  /**
-   * Penalize user reputation
-   */
-  penalizeReputation(userId: string, points: number, reason: string): void {
-    this.reputationManager.penalizeReputation(userId, points, reason);
-  }
-  
-  /**
-   * Get top users by reputation
-   */
-  getTopUsers(limit: number = 10): { userId: string; reputation: number }[] {
-    return this.reputationManager.getTopUsers(limit);
-  }
-  
-  /**
-   * Initialize content decay tracking
-   */
-  initializeContent(contentId: string): void {
-    this.decayEngine.initializeContent(contentId);
-  }
-  
-  /**
-   * Get content decay score
-   */
-  getContentDecayScore(contentId: string): number {
-    return this.decayEngine.getDecayScore(contentId);
-  }
-}
-
-// Export singleton instances for convenience
-export const ipfsManager = new IPFSManager();
-export const messageDistributor = new MessageDistributor();
-export const contentSynchronizer = new ContentSynchronizer();
-export const networkHealthMonitor = new NetworkHealthMonitor();
-export const reputationManager = new ReputationManager();
-export const contentDecayEngine = new ContentDecayEngine();
-export const p2pService = new P2PService();

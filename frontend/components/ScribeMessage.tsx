@@ -19,6 +19,14 @@ interface ScribeMessageProps {
   onReact?: (messageId: string, reaction: string) => void;
   onStake?: (messageId: string) => void;
   onReply?: (messageId: string) => void;
+  isReply?: boolean;
+  replyTo?: {
+    id: string;
+    content: string;
+    author: {
+      username: string;
+    };
+  };
 }
 
 export default function ScribeMessage({
@@ -30,7 +38,9 @@ export default function ScribeMessage({
   stakeTotal = 0,
   onReact,
   onStake,
-  onReply
+  onReply,
+  isReply = false,
+  replyTo
 }: ScribeMessageProps) {
   const [showActions, setShowActions] = useState(false);
 
@@ -61,10 +71,19 @@ export default function ScribeMessage({
 
   return (
     <div
-      className="message-component fade-in"
+      className={`message-component fade-in ${isReply ? 'reply-message' : ''}`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
+      {/* Reply Indicator */}
+      {isReply && replyTo && (
+        <div className="reply-indicator">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Replying to <strong>{replyTo.author.username}</strong>: {replyTo.content}
+          </span>
+        </div>
+      )}
+
       {/* Message Header */}
       <div className="message-header">
         <div className="message-avatar">
@@ -166,6 +185,18 @@ export default function ScribeMessage({
 
         .text-xs {
           font-size: 12px;
+        }
+
+        .reply-message {
+          background: rgba(212, 175, 55, 0.02);
+          border-left: 3px solid var(--accent-gold);
+        }
+
+        .reply-indicator {
+          padding: 8px 12px;
+          background: rgba(212, 175, 55, 0.05);
+          border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+          font-style: italic;
         }
       `}</style>
     </div>

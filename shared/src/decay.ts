@@ -8,238 +8,465 @@
  * 3. Quality content survives, noise disappears
  */
 
-import { Message, MessageReaction, ReactionType } from './types';
-
-// Decay Configuration
-export const DECAY_CONFIG = {
-  // Base decay rate (points lost per hour)
-  DECAY_RATE_PER_HOUR: 1,
-  
-  // Starting scores
-  INITIAL_SCORE: 100,
-  MINIMUM_VISIBLE_SCORE: 0,
-  
-  // Engagement boost values
-  REPLY_BOOST: 5,
-  REACTION_BOOST: 2,
-  SHARE_BOOST: 3,
-  
-  // Premium engagement (verified users, etc.)
-  VERIFIED_MULTIPLIER: 1.5,
-  HIGH_REPUTATION_THRESHOLD: 100,
-  HIGH_REPUTATION_MULTIPLIER: 1.2,
-  
-  // Time windows
-  ENGAGEMENT_WINDOW_HOURS: 24,  // Fresh engagement is worth more
-  VIRAL_THRESHOLD: 200,         // Score for viral content
-  
-  // Anti-spam measures
-  MAX_BOOST_PER_USER: 10,       // Max points one user can contribute
-  COOLDOWN_MINUTES: 5           // Min time between reactions from same user
-};
-
-/**
- * Calculate current decay score for a message
- */
-export function calculateDecayScore(message: Message): number {
-  const now = new Date();
-  const hoursSinceCreation = (now.getTime() - message.createdAt.getTime()) / (1000 * 60 * 60);
-  const hoursSinceLastEngagement = (now.getTime() - message.lastEngagement.getTime()) / (1000 * 60 * 60);
-  
-  // Base decay: lose points over time since last engagement
-  const baseDecay = hoursSinceLastEngagement * DECAY_CONFIG.DECAY_RATE_PER_HOUR;
-  
-  // Calculate current score
-  const currentScore = Math.max(0, message.decayScore - baseDecay);
-  
-  return Math.round(currentScore * 10) / 10; // Round to 1 decimal
+export interface DecayConfig {
+  baseDecayRate: number; // Base decay rate per time unit
+  engagementMultiplier: number; // Multiplier for engagement score
+  reputationMultiplier: number; // Multiplier for reputation score
+  timeFactor: number; // Time decay factor
+  minDecayScore: number; // Minimum decay score before expiration
+  maxLifetime: number; // Maximum lifetime in milliseconds
+  emergencyDecayRate: number; // Accelerated decay during emergencies
 }
 
-/**
- * Boost a message's decay score due to engagement
- */
-export function boostDecayScore(
-  message: Message, 
-  engagementType: 'reply' | 'reaction' | 'share',
-  engagerReputation: number = 50,
-  isVerified: boolean = false
-): number {
-  let boost = 0;
-  
-  // Base boost based on engagement type
-  switch (engagementType) {
-    case 'reply':
-      boost = DECAY_CONFIG.REPLY_BOOST;
-      break;
-    case 'reaction':
-      boost = DECAY_CONFIG.REACTION_BOOST;
-      break;
-    case 'share':
-      boost = DECAY_CONFIG.SHARE_BOOST;
-      break;
+export interface StakeInfo {
+  id: string;
+  amount: number;
+  stakedAt: number;
+  engagementScore: number;
+  reputationScore: number;
+  lastEngagementUpdate: number;
+  decayScore: number;
+  isExpired: boolean;
+  emergencyMode: boolean;
+}
+
+export interface EngagementMetrics {
+  likes: number;
+  comments: number;
+  shares: number;
+  views: number;
+  timeSpent: number; // in milliseconds
+  uniqueEngagers: number;
+}
+
+export interface ReputationMetrics {
+  totalStakes: number;
+  successfulStakes: number;
+  failedStakes: number;
+  averageEngagement: number;
+  networkContribution: number;
+  lastActivity: number;
+}
+
+export class DecayEngine {
+  private config: DecayConfig;
+  private stakes: Map<string, StakeInfo> = new Map();
+  private engagementHistory: Map<string, EngagementMetrics[]> = new Map();
+  private reputationHistory: Map<string, ReputationMetrics[]> = new Map();
+
+  constructor(config: Partial<DecayConfig> = {}) {
+    this.config = {
+      baseDecayRate: 0.001, // 0.1% per time unit
+      engagementMultiplier: 1.0,
+      reputationMultiplier: 1.0,
+      timeFactor: 1.0,
+      minDecayScore: 0.1,
+      maxLifetime: 7 * 24 * 60 * 60 * 1000, // 7 days
+      emergencyDecayRate: 0.01, // 1% per time unit during emergencies
+      ...config
+    };
   }
-  
-  // Apply multipliers for quality users
-  if (isVerified) {
-    boost *= DECAY_CONFIG.VERIFIED_MULTIPLIER;
-  }
-  
-  if (engagerReputation >= DECAY_CONFIG.HIGH_REPUTATION_THRESHOLD) {
-    boost *= DECAY_CONFIG.HIGH_REPUTATION_MULTIPLIER;
-  }
-  
-  // Fresh engagement is worth more
-  const now = new Date();
-  const hoursSinceCreation = (now.getTime() - message.createdAt.getTime()) / (1000 * 60 * 60);
-  
-  if (hoursSinceCreation <= DECAY_CONFIG.ENGAGEMENT_WINDOW_HOURS) {
-    boost *= 1.5; // 50% bonus for early engagement
-  }
-  
-  // Update message
-  const newScore = message.decayScore + boost;
-  
-  return Math.round(newScore * 10) / 10;
-}
 
-/**
- * Check if a message is still visible (score > 0)
- */
-export function isMessageVisible(message: Message): boolean {
-  const currentScore = calculateDecayScore(message);
-  return currentScore > DECAY_CONFIG.MINIMUM_VISIBLE_SCORE;
-}
-
-/**
- * Get messages sorted by current decay score (most relevant first)
- */
-export function sortMessagesByRelevance(messages: Message[]): Message[] {
-  return messages
-    .map(message => ({
-      ...message,
-      currentScore: calculateDecayScore(message)
-    }))
-    .filter(message => message.currentScore > DECAY_CONFIG.MINIMUM_VISIBLE_SCORE)
-    .sort((a, b) => b.currentScore - a.currentScore);
-}
-
-/**
- * Predict how long a message will remain visible
- */
-export function predictMessageLifetime(message: Message): {
-  hoursRemaining: number;
-  willSurvive: boolean;
-  needsEngagement: boolean;
-} {
-  const currentScore = calculateDecayScore(message);
-  const hoursRemaining = currentScore / DECAY_CONFIG.DECAY_RATE_PER_HOUR;
-  
-  return {
-    hoursRemaining: Math.round(hoursRemaining * 10) / 10,
-    willSurvive: hoursRemaining > 24, // Will last more than a day
-    needsEngagement: hoursRemaining < 6 // Needs help within 6 hours
-  };
-}
-
-/**
- * Calculate quality score for weekly summaries
- */
-export function calculateMessageQuality(message: Message): number {
-  const engagementRatio = (message.replyCount * 5 + message.reactionCount * 2) / Math.max(1, message.decayScore);
-  const longevity = calculateDecayScore(message) / DECAY_CONFIG.INITIAL_SCORE;
-  const freshness = Math.max(0, 1 - ((Date.now() - message.createdAt.getTime()) / (1000 * 60 * 60 * 24 * 7))); // Week decay
-  
-  return (engagementRatio * 0.4 + longevity * 0.4 + freshness * 0.2) * 100;
-}
-
-/**
- * Weekly summary data for bounty system
- */
-export function generateWeeklySummaryData(messages: Message[]): {
-  topMessages: Message[];
-  trends: string[];
-  stats: {
-    totalMessages: number;
-    averageLifetime: number;
-    engagementRate: number;
-    qualityScore: number;
-  };
-} {
-  const visibleMessages = messages.filter(isMessageVisible);
-  const topMessages = sortMessagesByRelevance(visibleMessages).slice(0, 10);
-  
-  // Calculate aggregate stats
-  const totalLifetimes = messages.map(m => {
-    const lifetime = (m.lastEngagement.getTime() - m.createdAt.getTime()) / (1000 * 60 * 60);
-    return lifetime;
-  });
-  
-  const averageLifetime = totalLifetimes.reduce((a, b) => a + b, 0) / totalLifetimes.length;
-  const totalEngagements = messages.reduce((sum, m) => sum + m.replyCount + m.reactionCount, 0);
-  const engagementRate = totalEngagements / messages.length;
-  const averageQuality = messages.reduce((sum, m) => sum + calculateMessageQuality(m), 0) / messages.length;
-  
-  // Extract trending topics (simplified)
-  const trends = extractTrendingTopics(messages);
-  
-  return {
-    topMessages,
-    trends,
-    stats: {
-      totalMessages: messages.length,
-      averageLifetime: Math.round(averageLifetime * 10) / 10,
-      engagementRate: Math.round(engagementRate * 10) / 10,
-      qualityScore: Math.round(averageQuality * 10) / 10
-    }
-  };
-}
-
-/**
- * Extract trending topics from message content (simplified implementation)
- */
-function extractTrendingTopics(messages: Message[]): string[] {
-  // This would use NLP in production, simplified for now
-  const words = messages
-    .flatMap(m => m.content.toLowerCase().split(/\s+/))
-    .filter(word => word.length > 4) // Filter short words
-    .filter(word => !/^(the|and|but|for|are|was|were|been|have|has|had|will|would|could|should)/.test(word));
-  
-  const wordCounts = words.reduce((counts, word) => {
-    counts[word] = (counts[word] || 0) + 1;
-    return counts;
-  }, {} as Record<string, number>);
-  
-  return Object.entries(wordCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
-    .map(([word]) => word);
-}
-
-/**
- * Simulate message decay over time (for testing)
- */
-export function simulateDecayOverTime(message: Message, hours: number): {
-  hour: number;
-  score: number;
-  visible: boolean;
-}[] {
-  const results = [];
-  const originalLastEngagement = new Date(message.lastEngagement);
-  
-  for (let h = 0; h <= hours; h++) {
-    // Simulate time passage
-    message.lastEngagement = new Date(originalLastEngagement.getTime() + h * 60 * 60 * 1000);
+  /**
+   * Create a new stake with initial decay parameters
+   */
+  createStake(
+    stakeId: string,
+    amount: number,
+    initialReputation: number = 50
+  ): StakeInfo {
+    const now = Date.now();
     
-    const score = calculateDecayScore(message);
-    results.push({
-      hour: h,
-      score,
-      visible: score > DECAY_CONFIG.MINIMUM_VISIBLE_SCORE
+    const stakeInfo: StakeInfo = {
+      id: stakeId,
+      amount,
+      stakedAt: now,
+      engagementScore: 0,
+      reputationScore: initialReputation,
+      lastEngagementUpdate: now,
+      decayScore: amount, // Start with full stake amount
+      isExpired: false,
+      emergencyMode: false
+    };
+
+    this.stakes.set(stakeId, stakeInfo);
+    this.engagementHistory.set(stakeId, []);
+    this.reputationHistory.set(stakeId, []);
+
+    return stakeInfo;
+  }
+
+  /**
+   * Update engagement metrics for a stake
+   */
+  updateEngagement(
+    stakeId: string,
+    engagement: Partial<EngagementMetrics>
+  ): void {
+    const stake = this.stakes.get(stakeId);
+    if (!stake) {
+      throw new Error(`Stake not found: ${stakeId}`);
+    }
+
+    const currentEngagement = this.engagementHistory.get(stakeId) || [];
+    const newEngagement: EngagementMetrics = {
+      likes: engagement.likes || 0,
+      comments: engagement.comments || 0,
+      shares: engagement.shares || 0,
+      views: engagement.views || 0,
+      timeSpent: engagement.timeSpent || 0,
+      uniqueEngagers: engagement.uniqueEngagers || 0
+    };
+
+    currentEngagement.push(newEngagement);
+    this.engagementHistory.set(stakeId, currentEngagement);
+
+    // Calculate new engagement score
+    stake.engagementScore = this.calculateEngagementScore(newEngagement);
+    stake.lastEngagementUpdate = Date.now();
+
+    // Recalculate decay score
+    this.recalculateDecayScore(stakeId);
+  }
+
+  /**
+   * Update reputation metrics for a user
+   */
+  updateReputation(
+    userId: string,
+    reputation: Partial<ReputationMetrics>
+  ): void {
+    const currentReputation = this.reputationHistory.get(userId) || [];
+    const newReputation: ReputationMetrics = {
+      totalStakes: reputation.totalStakes || 0,
+      successfulStakes: reputation.successfulStakes || 0,
+      failedStakes: reputation.failedStakes || 0,
+      averageEngagement: reputation.averageEngagement || 0,
+      networkContribution: reputation.networkContribution || 0,
+      lastActivity: Date.now()
+    };
+
+    currentReputation.push(newReputation);
+    this.reputationHistory.set(userId, currentReputation);
+
+    // Update reputation for all user's stakes
+    for (const stake of this.stakes.values()) {
+      if (stake.id.includes(userId)) {
+        stake.reputationScore = this.calculateReputationScore(newReputation);
+        this.recalculateDecayScore(stake.id);
+      }
+    }
+  }
+
+  /**
+   * Calculate current decay score using the exact formula from documentation
+   * decayScore = (baseStake * engagementMultiplier) / (timeFactor * reputationMultiplier)
+   */
+  calculateDecayScore(stakeId: string): number {
+    const stake = this.stakes.get(stakeId);
+    if (!stake) {
+      throw new Error(`Stake not found: ${stakeId}`);
+    }
+
+    const now = Date.now();
+    const timeElapsed = now - stake.stakedAt;
+    
+    // Calculate time factor (exponential decay)
+    const timeFactor = Math.exp(this.config.timeFactor * timeElapsed / (24 * 60 * 60 * 1000)); // Daily decay
+    
+    // Calculate engagement multiplier
+    const engagementMultiplier = 1 + (stake.engagementScore / 100) * this.config.engagementMultiplier;
+    
+    // Calculate reputation multiplier
+    const reputationMultiplier = 1 + (stake.reputationScore / 100) * this.config.reputationMultiplier;
+    
+    // Apply emergency mode if active
+    const emergencyMultiplier = stake.emergencyMode ? this.config.emergencyDecayRate : 1;
+    
+    // Calculate decay score using the exact formula
+    const decayScore = (stake.amount * engagementMultiplier) / (timeFactor * reputationMultiplier * emergencyMultiplier);
+    
+    // Ensure decay score doesn't go below minimum
+    const finalDecayScore = Math.max(decayScore, stake.amount * this.config.minDecayScore);
+    
+    return finalDecayScore;
+  }
+
+  /**
+   * Recalculate decay score for a stake
+   */
+  private recalculateDecayScore(stakeId: string): void {
+    const stake = this.stakes.get(stakeId);
+    if (!stake) return;
+
+    stake.decayScore = this.calculateDecayScore(stakeId);
+    
+    // Check if stake has expired
+    if (stake.decayScore <= stake.amount * this.config.minDecayScore) {
+      stake.isExpired = true;
+    }
+    
+    // Check if maximum lifetime exceeded
+    const now = Date.now();
+    if (now - stake.stakedAt > this.config.maxLifetime) {
+      stake.isExpired = true;
+    }
+  }
+
+  /**
+   * Calculate engagement score from metrics
+   */
+  private calculateEngagementScore(engagement: EngagementMetrics): number {
+    let score = 0;
+    
+    // Weighted scoring system
+    score += engagement.likes * 1;
+    score += engagement.comments * 3;
+    score += engagement.shares * 5;
+    score += engagement.views * 0.1;
+    score += (engagement.timeSpent / 60000) * 0.5; // 1 point per minute
+    score += engagement.uniqueEngagers * 2;
+    
+    // Normalize to 0-100 range
+    return Math.min(100, Math.max(0, score));
+  }
+
+  /**
+   * Calculate reputation score from metrics
+   */
+  private calculateReputationScore(reputation: ReputationMetrics): number {
+    let score = 50; // Base score
+    
+    // Success rate bonus
+    if (reputation.totalStakes > 0) {
+      const successRate = reputation.successfulStakes / reputation.totalStakes;
+      score += successRate * 20;
+    }
+    
+    // Engagement bonus
+    score += Math.min(reputation.averageEngagement / 10, 20);
+    
+    // Network contribution bonus
+    score += Math.min(reputation.networkContribution / 100, 10);
+    
+    // Activity penalty (decay over time)
+    const daysSinceActivity = (Date.now() - reputation.lastActivity) / (24 * 60 * 60 * 1000);
+    if (daysSinceActivity > 30) {
+      score -= Math.min(daysSinceActivity - 30, 20);
+    }
+    
+    // Normalize to 0-100 range
+    return Math.min(100, Math.max(0, score));
+  }
+
+  /**
+   * Activate emergency mode for a stake (accelerated decay)
+   */
+  activateEmergencyMode(stakeId: string): void {
+    const stake = this.stakes.get(stakeId);
+    if (!stake) {
+      throw new Error(`Stake not found: ${stakeId}`);
+    }
+
+    stake.emergencyMode = true;
+    this.recalculateDecayScore(stakeId);
+  }
+
+  /**
+   * Deactivate emergency mode for a stake
+   */
+  deactivateEmergencyMode(stakeId: string): void {
+    const stake = this.stakes.get(stakeId);
+    if (!stake) {
+      throw new Error(`Stake not found: ${stakeId}`);
+    }
+
+    stake.emergencyMode = false;
+    this.recalculateDecayScore(stakeId);
+  }
+
+  /**
+   * Get all expired stakes
+   */
+  getExpiredStakes(): StakeInfo[] {
+    return Array.from(this.stakes.values()).filter(stake => stake.isExpired);
+  }
+
+  /**
+   * Get stakes expiring soon (within specified time)
+   */
+  getStakesExpiringSoon(withinMs: number): StakeInfo[] {
+    const now = Date.now();
+    return Array.from(this.stakes.values()).filter(stake => {
+      if (stake.isExpired) return false;
+      
+      const timeToExpiry = this.estimateTimeToExpiry(stake.id);
+      return timeToExpiry <= withinMs;
     });
   }
-  
-  // Restore original timestamp
-  message.lastEngagement = originalLastEngagement;
-  
-  return results;
+
+  /**
+   * Estimate time until stake expires
+   */
+  estimateTimeToExpiry(stakeId: string): number {
+    const stake = this.stakes.get(stakeId);
+    if (!stake || stake.isExpired) return 0;
+
+    const currentDecayScore = stake.decayScore;
+    const targetDecayScore = stake.amount * this.config.minDecayScore;
+    
+    if (currentDecayScore <= targetDecayScore) return 0;
+
+    // Estimate based on current decay rate
+    const decayRate = this.config.baseDecayRate;
+    const timeToExpiry = Math.log(currentDecayScore / targetDecayScore) / decayRate;
+    
+    return Math.max(0, timeToExpiry * (24 * 60 * 60 * 1000)); // Convert to milliseconds
+  }
+
+  /**
+   * Get decay statistics for a stake
+   */
+  getDecayStats(stakeId: string): {
+    currentScore: number;
+    initialAmount: number;
+    decayPercentage: number;
+    timeElapsed: number;
+    estimatedExpiry: number;
+    engagementScore: number;
+    reputationScore: number;
+  } {
+    const stake = this.stakes.get(stakeId);
+    if (!stake) {
+      throw new Error(`Stake not found: ${stakeId}`);
+    }
+
+    const now = Date.now();
+    const timeElapsed = now - stake.stakedAt;
+    const decayPercentage = ((stake.amount - stake.decayScore) / stake.amount) * 100;
+
+    return {
+      currentScore: stake.decayScore,
+      initialAmount: stake.amount,
+      decayPercentage,
+      timeElapsed,
+      estimatedExpiry: this.estimateTimeToExpiry(stakeId),
+      engagementScore: stake.engagementScore,
+      reputationScore: stake.reputationScore
+    };
+  }
+
+  /**
+   * Get all stakes for a user
+   */
+  getUserStakes(userId: string): StakeInfo[] {
+    return Array.from(this.stakes.values()).filter(stake => 
+      stake.id.includes(userId)
+    );
+  }
+
+  /**
+   * Get network-wide decay statistics
+   */
+  getNetworkDecayStats(): {
+    totalStakes: number;
+    activeStakes: number;
+    expiredStakes: number;
+    totalStakedAmount: number;
+    totalDecayedAmount: number;
+    averageDecayRate: number;
+    emergencyModeStakes: number;
+  } {
+    const stakes = Array.from(this.stakes.values());
+    const totalStakes = stakes.length;
+    const activeStakes = stakes.filter(s => !s.isExpired).length;
+    const expiredStakes = stakes.filter(s => s.isExpired).length;
+    const totalStakedAmount = stakes.reduce((sum, s) => sum + s.amount, 0);
+    const totalDecayedAmount = stakes.reduce((sum, s) => sum + (s.amount - s.decayScore), 0);
+    const emergencyModeStakes = stakes.filter(s => s.emergencyMode).length;
+
+    const averageDecayRate = totalStakedAmount > 0 ? 
+      (totalDecayedAmount / totalStakedAmount) * 100 : 0;
+
+    return {
+      totalStakes,
+      activeStakes,
+      expiredStakes,
+      totalStakedAmount,
+      totalDecayedAmount,
+      averageDecayRate,
+      emergencyModeStakes
+    };
+  }
+
+  /**
+   * Clean up expired stakes
+   */
+  cleanupExpiredStakes(): string[] {
+    const expiredIds: string[] = [];
+    
+    for (const [stakeId, stake] of this.stakes.entries()) {
+      if (stake.isExpired) {
+        expiredIds.push(stakeId);
+        this.stakes.delete(stakeId);
+        this.engagementHistory.delete(stakeId);
+      }
+    }
+
+    return expiredIds;
+  }
+
+  /**
+   * Update configuration
+   */
+  updateConfig(newConfig: Partial<DecayConfig>): void {
+    this.config = { ...this.config, ...newConfig };
+    
+    // Recalculate all decay scores with new config
+    for (const stakeId of this.stakes.keys()) {
+      this.recalculateDecayScore(stakeId);
+    }
+  }
+
+  /**
+   * Get current configuration
+   */
+  getConfig(): DecayConfig {
+    return { ...this.config };
+  }
+
+  /**
+   * Export all stake data
+   */
+  exportData(): {
+    stakes: Map<string, StakeInfo>;
+    engagementHistory: Map<string, EngagementMetrics[]>;
+    reputationHistory: Map<string, ReputationMetrics[]>;
+    config: DecayConfig;
+  } {
+    return {
+      stakes: new Map(this.stakes),
+      engagementHistory: new Map(this.engagementHistory),
+      reputationHistory: new Map(this.reputationHistory),
+      config: { ...this.config }
+    };
+  }
+
+  /**
+   * Import stake data
+   */
+  importData(data: {
+    stakes: Map<string, StakeInfo>;
+    engagementHistory: Map<string, EngagementMetrics[]>;
+    reputationHistory: Map<string, ReputationMetrics[]>;
+    config?: Partial<DecayConfig>;
+  }): void {
+    this.stakes = new Map(data.stakes);
+    this.engagementHistory = new Map(data.engagementHistory);
+    this.reputationHistory = new Map(data.reputationHistory);
+    
+    if (data.config) {
+      this.updateConfig(data.config);
+    }
+  }
 }

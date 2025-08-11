@@ -18,8 +18,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <Head>
-        <title>OnusOne - Decentralized Social Network</title>
-        <meta name="description" content="Connect, share, and earn on the decentralized social network" />
+        <title>OnusOne - The Network</title>
+        <meta name="description" content="Enter the network" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -44,7 +44,7 @@ export default function Home() {
                 variant="secondary"
                 size="sm"
               >
-                Logout
+                Exit
               </Button>
             </div>
           </div>
@@ -53,17 +53,17 @@ export default function Home() {
 
       <main className="container mx-auto px-4 py-16">
         {/* Hero Section */}
-        <div className="text-center max-w-4xl mx-auto mb-16">
+        <div className="text-center max-w-4xl mx-auto mb-16 fade-in-up">
           <div className="mb-8">
-            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 hover-lift">
               <span className="text-white font-bold text-3xl">O</span>
             </div>
             <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               OnusOne
             </h1>
             <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-              The decentralized social network where you own your content,<br />
-              control your data, and earn from your contributions.
+              Enter the network.<br />
+              <span className="text-mysterious">Everything else is just noise.</span>
             </p>
           </div>
 
@@ -75,21 +75,21 @@ export default function Home() {
                   onClick={() => router.push('/boards')}
                   className="px-8 py-4 text-lg"
                 >
-                  Explore Boards
+                  Enter
                 </Button>
                 <Button 
                   onClick={() => router.push('/topics')}
                   variant="secondary"
                   className="px-8 py-4 text-lg"
                 >
-                  Browse Topics
+                  Explore
                 </Button>
               </>
             ) : (
               <div className="space-y-4">
                 <WalletMultiButton className="!bg-gradient-to-r !from-blue-600 !to-purple-600 hover:!from-blue-700 hover:!to-purple-700 !px-8 !py-4 !text-lg !rounded-xl" />
                 <p className="text-sm text-gray-400">
-                  Connect your wallet to get started
+                  Connect to enter
                 </p>
               </div>
             )}
@@ -98,33 +98,33 @@ export default function Home() {
 
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300">
+          <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 hover-lift">
             <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4">
               <span className="text-2xl">🔒</span>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Own Your Data</h3>
+            <h3 className="text-xl font-semibold mb-3">Yours</h3>
             <p className="text-gray-300 leading-relaxed">
-              Your content stays with you. No more losing access to your posts or having them deleted by platforms.
+              Your content. Your rules. No one else controls what you create.
             </p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300">
+          <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 hover-lift">
             <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-4">
-              <span className="text-2xl">💰</span>
+              <span className="text-2xl">⚡</span>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Earn Rewards</h3>
+            <h3 className="text-xl font-semibold mb-3">Direct</h3>
             <p className="text-gray-300 leading-relaxed">
-              Get rewarded for quality content and active participation. Stake tokens and earn from the network.
+              Peer to peer. No middlemen. Pure connection.
             </p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300">
+          <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 hover-lift">
             <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-4">
               <span className="text-2xl">🌐</span>
             </div>
-            <h3 className="text-xl font-semibold mb-3">Decentralized</h3>
+            <h3 className="text-xl font-semibold mb-3">Network</h3>
             <p className="text-gray-300 leading-relaxed">
-              No central authority. The network is powered by its users, making it resilient and censorship-resistant.
+              The network is the platform. You are the network.
             </p>
           </div>
         </div>
@@ -137,29 +137,29 @@ export default function Home() {
               <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-blue-400">1</span>
               </div>
-              <h3 className="font-semibold mb-2">Connect Wallet</h3>
-              <p className="text-gray-400 text-sm">Link your Solana wallet to get started</p>
+              <h3 className="font-semibold mb-2">Connect</h3>
+              <p className="text-gray-400 text-sm">Link your wallet</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-green-400">2</span>
               </div>
-              <h3 className="font-semibold mb-2">Join Communities</h3>
-              <p className="text-gray-400 text-sm">Explore boards and topics that interest you</p>
+              <h3 className="font-semibold mb-2">Enter</h3>
+              <p className="text-gray-400 text-sm">Join the conversation</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-purple-400">3</span>
               </div>
-              <h3 className="font-semibold mb-2">Create & Engage</h3>
-              <p className="text-gray-400 text-sm">Share content and interact with others</p>
+              <h3 className="font-semibold mb-2">Create</h3>
+              <p className="text-gray-400 text-sm">Share what matters</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-yellow-400">4</span>
               </div>
-              <h3 className="font-semibold mb-2">Earn Rewards</h3>
-              <p className="text-gray-400 text-sm">Get rewarded for quality contributions</p>
+              <h3 className="font-semibold mb-2">Grow</h3>
+              <p className="text-gray-400 text-sm">Build your presence</p>
             </div>
           </div>
         </div>
@@ -167,9 +167,9 @@ export default function Home() {
         {/* Call to Action */}
         {!isAuthenticated && (
           <div className="text-center bg-gradient-to-r from-blue-500/10 to-purple-500/10 p-12 rounded-3xl border border-white/10">
-            <h2 className="text-2xl font-bold mb-4">Ready to Get Started?</h2>
+            <h2 className="text-2xl font-bold mb-4">Ready?</h2>
             <p className="text-gray-300 mb-6">
-              Join thousands of users who are already building the future of social media
+              The network awaits
             </p>
             <WalletMultiButton className="!bg-gradient-to-r !from-blue-600 !to-purple-600 hover:!from-blue-700 hover:!to-purple-700 !px-8 !py-4 !text-lg !rounded-xl" />
           </div>

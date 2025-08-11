@@ -231,7 +231,7 @@ class MockKV {
         return this;
       },
       exec: async () => {
-        const results = [];
+        const results: any[] = [];
         for (const op of operations) {
           try {
             results.push(await op());

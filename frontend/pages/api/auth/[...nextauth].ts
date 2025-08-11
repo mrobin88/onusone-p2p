@@ -21,7 +21,7 @@ export default NextAuth({
         (session.user as any).username = (token as any).username;
         (session.user as any).walletAddress = (token as any).walletAddress;
       }
-      return token;
+      return session;
     }
   },
   providers: [

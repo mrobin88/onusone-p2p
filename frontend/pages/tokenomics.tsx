@@ -12,6 +12,8 @@ interface TokenomicsData {
   burnEvents: number;
   activeStakes: number;
   averageStakeSize: number;
+  burnedTokens: number;
+  stakedTokens: number;
   deflationary: {
     burnRatePercent: number;
     projectedSupplyIn1Year: number;
@@ -23,6 +25,7 @@ interface TokenomicsData {
     timestamp: string;
     decayScore: number;
     txSig?: string;
+    reason?: string;
   }>;
   topStakedPosts: Array<{
     postId: string;
@@ -32,6 +35,12 @@ interface TokenomicsData {
     decayScore: number;
     createdAt: string;
   }>;
+  networkMetrics: {
+    activeStakes: number;
+    contentCreated: number;
+    qualityScore: number;
+    deflationary_rate: number;
+  };
 }
 
 export default function Tokenomics() {
@@ -44,6 +53,8 @@ export default function Tokenomics() {
   useEffect(() => {
     const interval = setInterval(() => {
       setTokenomicsData(prev => {
+        if (!prev) return prev;
+        
         const burnAmount = Math.floor(Math.random() * 1000) + 100;
         const burnReasons = [
           'Content decay threshold reached',
@@ -62,7 +73,7 @@ export default function Tokenomics() {
             {
               amount: burnAmount,
               reason: randomReason,
-              timestamp: new Date()
+              timestamp: new Date().toISOString()
             },
             ...prev.recentBurns.slice(0, 9) // Keep last 10
           ],
@@ -222,7 +233,7 @@ export default function Tokenomics() {
                         <div className="text-xs text-gray-500">{burn.reason}</div>
                       </div>
                       <div className="text-xs text-gray-500">
-                        {burn.timestamp.toLocaleTimeString()}
+                        {new Date(burn.timestamp).toLocaleTimeString()}
                       </div>
                     </div>
                   ))

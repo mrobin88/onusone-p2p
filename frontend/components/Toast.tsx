@@ -129,12 +129,12 @@ const ToastItem: React.FC<ToastProps> = ({ toast, onRemove }) => {
 
 // Toast Context and Hook
 interface ToastContextType {
-  showToast: (toast: Omit<Toast, 'id'>) => void;
-  showSuccess: (title: string, message?: string) => void;
-  showError: (title: string, message?: string) => void;
-  showWarning: (title: string, message?: string) => void;
-  showInfo: (title: string, message?: string) => void;
-  showLoading: (title: string, message?: string) => void;
+  showToast: (toast: Omit<Toast, 'id'>) => string;
+  showSuccess: (title: string, message?: string) => string;
+  showError: (title: string, message?: string) => string;
+  showWarning: (title: string, message?: string) => string;
+  showInfo: (title: string, message?: string) => string;
+  showLoading: (title: string, message?: string) => string;
   dismissToast: (id: string) => void;
 }
 
@@ -154,6 +154,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const showToast = (toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substr(2, 9);
     setToasts(prev => [...prev, { ...toast, id }]);
+    return id;
   };
 
   const dismissToast = (id: string) => {
@@ -161,23 +162,23 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const showSuccess = (title: string, message?: string) => {
-    showToast({ type: 'success', title, message, duration: 4000 });
+    return showToast({ type: 'success', title, message, duration: 4000 });
   };
 
   const showError = (title: string, message?: string) => {
-    showToast({ type: 'error', title, message, duration: 6000 });
+    return showToast({ type: 'error', title, message, duration: 6000 });
   };
 
   const showWarning = (title: string, message?: string) => {
-    showToast({ type: 'warning', title, message, duration: 5000 });
+    return showToast({ type: 'warning', title, message, duration: 5000 });
   };
 
   const showInfo = (title: string, message?: string) => {
-    showToast({ type: 'info', title, message, duration: 4000 });
+    return showToast({ type: 'info', title, message, duration: 4000 });
   };
 
   const showLoading = (title: string, message?: string) => {
-    showToast({ type: 'loading', title, message, duration: Infinity });
+    return showToast({ type: 'loading', title, message, duration: Infinity });
   };
 
   return (

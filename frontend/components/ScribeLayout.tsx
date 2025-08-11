@@ -7,7 +7,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useWalletAuth } from './WalletAuth';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import CompactWalletWidget from './CompactWalletWidget';
 
 interface ScribeLayoutProps {
   children: React.ReactNode;
@@ -31,6 +31,9 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
 
   return (
     <div className="scribe-layout">
+      {/* Compact Wallet Widget */}
+      <CompactWalletWidget />
+      
       {/* Header */}
       <header className="scribe-header">
         <div className="flex items-center space-x-6">
@@ -50,12 +53,6 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
                 {user.reputation} rep • {user.totalPosts} posts
               </span>
             </>
-          )}
-          <WalletMultiButton className="btn-primary" />
-          {isAuthenticated && (
-            <button onClick={logout} className="btn-text">
-              Logout
-            </button>
           )}
         </div>
       </header>
