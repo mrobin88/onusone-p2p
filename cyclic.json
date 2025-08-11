@@ -1,0 +1,10 @@
+{
+  "name": "onusone-p2p-backend",
+  "type": "node",
+  "buildCommand": "npm run build",
+  "startCommand": "npm run orbit:start",
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "8889"
+  }
+}
