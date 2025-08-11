@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useWalletAuth } from '../components/WalletAuth';
 import Button from '../components/Button';
+import '../styles/industrial-punk.css';
 
 export default function P2PDemo() {
   const router = useRouter();
@@ -68,36 +69,34 @@ export default function P2PDemo() {
   };
 
   const getReputationColor = (rep: number) => {
-    if (rep >= 200) return 'text-purple-400';
-    if (rep >= 150) return 'text-blue-400';
-    if (rep >= 100) return 'text-green-400';
-    return 'text-yellow-400';
+    if (rep >= 200) return 'text-rust';
+    if (rep >= 150) return 'text-metal';
+    if (rep >= 100) return 'text-rust';
+    return 'text-concrete';
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen concrete-bg dirty-overlay">
       <Head>
-        <title>OnusOne P2P - Why Decentralization Matters</title>
-        <meta name="description" content="Experience true decentralized social networking" />
+        <title>ONUSONE P2P - INDUSTRIAL TERMINAL</title>
+        <meta name="description" content="Industrial punk P2P network terminal" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-6">
-              <h1 className="text-2xl font-bold">OnusOne P2P</h1>
-              <div className="flex items-center space-x-2 text-sm">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-gray-300">P2P Network Active</span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {isAuthenticated ? (
-                <>
-                  <span className="text-gray-300">Welcome, {user?.username}!</span>
-                  <Button onClick={() => logout()} variant="secondary" size="sm">
+      {/* Industrial Header */}
+      <header className="industrial-header">
+        <div className="flex items-center space-x-6">
+          <h1 className="industrial-title industrial-text">ONUSONE P2P</h1>
+          <div className="flex items-center space-x-2 text-sm">
+            <div className="status-indicator status-online"></div>
+            <span className="industrial-text">P2P NETWORK ACTIVE</span>
+          </div>
+        </div>
+        <div className="flex items-center space-x-4">
+          {isAuthenticated ? (
+            <>
+              <span className="industrial-text">WELCOME, {user?.username?.toUpperCase()}!</span>
+              <Button onClick={() => logout()} variant="secondary" size="sm">
                     Logout
                   </Button>
                 </>
@@ -111,142 +110,142 @@ export default function P2PDemo() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="industrial-container">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            Why P2P Changes Everything
+          <h1 className="industrial-text text-rust text-5xl font-bold mb-6">
+            WHY P2P CHANGES EVERYTHING
           </h1>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Traditional social media is broken. OnusOne P2P fixes it with true decentralization, 
-            community governance, and revolutionary content quality systems.
+          <p className="text-xl max-w-3xl mx-auto leading-relaxed industrial-text">
+            TRADITIONAL SOCIAL MEDIA IS BROKEN. ONUSONE P2P FIXES IT WITH TRUE DECENTRALIZATION, 
+            COMMUNITY GOVERNANCE, AND REVOLUTIONARY CONTENT QUALITY SYSTEMS.
           </p>
         </div>
 
-        <div className="max-w-6xl mx-auto space-y-8">
+        <div className="grid-industrial grid-4 space-y-8">
           {/* Live P2P Network Status */}
-          <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 border border-blue-500/30 rounded-xl p-8">
-            <h2 className="text-2xl font-bold mb-6 text-blue-300 flex items-center">
+          <div className="industrial-panel border-rusty">
+            <div className="panel-header">
               <span className="mr-3">🌐</span>
-              Live P2P Network Status
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6">
+              LIVE P2P NETWORK STATUS
+            </div>
+            <div className="grid-industrial grid-4 gap-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-400">{networkStats.connectedPeers}</div>
-                <div className="text-sm text-gray-300">Connected Peers</div>
+                <div className="text-3xl font-bold text-rust industrial-text">{networkStats.connectedPeers}</div>
+                <div className="text-sm">CONNECTED PEERS</div>
               </div>
               <div className="text-center">
-                <div className={`text-3xl font-bold ${getReputationColor(networkStats.userReputation)}`}>
+                <div className={`text-3xl font-bold industrial-text ${getReputationColor(networkStats.userReputation)}`}>
                   {networkStats.userReputation}
                 </div>
-                <div className="text-sm text-gray-300">Your Reputation</div>
+                <div className="text-sm">YOUR REPUTATION</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-400">{networkStats.networkHealth}</div>
-                <div className="text-sm text-gray-300">Network Health</div>
+                <div className="text-3xl font-bold text-metal industrial-text">{networkStats.networkHealth}</div>
+                <div className="text-sm">NETWORK HEALTH</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-yellow-400">{networkStats.totalMessages}</div>
-                <div className="text-sm text-gray-300">Active Messages</div>
+                <div className="text-3xl font-bold text-concrete industrial-text">{networkStats.totalMessages}</div>
+                <div className="text-sm">ACTIVE MESSAGES</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-red-400">{networkStats.activeDecay}</div>
-                <div className="text-sm text-gray-300">Content Decaying</div>
+                <div className="text-3xl font-bold text-rust industrial-text">{networkStats.activeDecay}</div>
+                <div className="text-sm">CONTENT DECAYING</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-cyan-400">{networkStats.contentQuality}%</div>
-                <div className="text-sm text-gray-300">Quality Score</div>
+                <div className="text-3xl font-bold text-metal industrial-text">{networkStats.contentQuality}%</div>
+                <div className="text-sm">QUALITY SCORE</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-orange-400">{networkStats.spamBlocked}</div>
-                <div className="text-sm text-gray-300">Spam Blocked</div>
+                <div className="text-3xl font-bold text-concrete industrial-text">{networkStats.spamBlocked}</div>
+                <div className="text-sm">SPAM BLOCKED</div>
               </div>
             </div>
             <div className="mt-6 text-center">
-              <Button onClick={handleViewNetwork} variant="secondary" size="sm">
-                View Network Details →
-              </Button>
+              <button onClick={handleViewNetwork} className="btn-industrial btn-rusty">
+                VIEW NETWORK DETAILS →
+              </button>
             </div>
           </div>
 
           {/* The Problem vs Solution */}
-          <div className="grid lg:grid-cols-2 gap-8">
-            <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-8">
-              <h3 className="text-2xl font-bold mb-6 text-red-400 flex items-center">
+          <div className="grid-industrial grid-2 gap-8">
+            <div className="industrial-panel border-rusty">
+              <div className="panel-header">
                 <span className="mr-3">❌</span>
-                Traditional Platforms
-              </h3>
+                TRADITIONAL PLATFORMS
+              </div>
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-red-400 rounded-full mt-2"></div>
+                  <div className="w-2 h-2 bg-rust rounded-full mt-2"></div>
                   <div>
-                    <div className="font-medium text-red-300">Algorithmic Manipulation</div>
-                    <div className="text-sm text-gray-400">Platforms decide what you see based on profit, not value</div>
+                    <div className="font-medium text-rust">ALGORITHMIC MANIPULATION</div>
+                    <div className="text-sm text-secondary">Platforms decide what you see based on profit, not value</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-red-400 rounded-full mt-2"></div>
+                  <div className="w-2 h-2 bg-rust rounded-full mt-2"></div>
                   <div>
-                    <div className="font-medium text-red-300">Data Exploitation</div>
-                    <div className="text-sm text-gray-400">Your content, conversations, and behavior are harvested for profit</div>
+                    <div className="font-medium text-rust">DATA EXPLOITATION</div>
+                    <div className="text-sm text-secondary">Your content, conversations, and behavior are harvested for profit</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-red-400 rounded-full mt-2"></div>
+                  <div className="w-2 h-2 bg-rust rounded-full mt-2"></div>
                   <div>
-                    <div className="font-medium text-red-300">Censorship Risk</div>
-                    <div className="text-sm text-gray-400">Can be banned, silenced, or deleted at any moment</div>
+                    <div className="font-medium text-rust">CENSORSHIP RISK</div>
+                    <div className="text-sm text-secondary">Can be banned, silenced, or deleted at any moment</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-red-400 rounded-full mt-2"></div>
+                  <div className="w-2 h-2 bg-rust rounded-full mt-2"></div>
                   <div>
-                    <div className="font-medium text-red-300">Spam & Low Quality</div>
-                    <div className="text-sm text-gray-400">Manual moderation fails, spam everywhere</div>
+                    <div className="font-medium text-rust">SPAM & LOW QUALITY</div>
+                    <div className="text-sm text-secondary">Manual moderation fails, spam everywhere</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-red-400 rounded-full mt-2"></div>
+                  <div className="w-2 h-2 bg-rust rounded-full mt-2"></div>
                   <div>
-                    <div className="font-medium text-red-300">Single Point of Failure</div>
-                    <div className="text-sm text-gray-400">Platform goes down = you lose everything</div>
+                    <div className="font-medium text-rust">SINGLE POINT OF FAILURE</div>
+                    <div className="text-sm text-secondary">Platform goes down = you lose everything</div>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-8">
-              <h3 className="text-2xl font-bold mb-6 text-green-400 flex items-center">
+            <div className="industrial-panel border-rusty">
+              <div className="panel-header">
                 <span className="mr-3">✅</span>
-                OnusOne P2P
-              </h3>
+                ONUSONE P2P
+              </div>
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+                  <div className="w-2 h-2 bg-rust rounded-full mt-2"></div>
                   <div>
-                    <div className="font-medium text-green-300">Community Governance</div>
-                    <div className="text-sm text-gray-400">Users decide content quality through reputation and decay</div>
+                    <div className="font-medium text-rust">COMMUNITY GOVERNANCE</div>
+                    <div className="text-sm text-secondary">Users decide content quality through reputation and decay</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+                  <div className="w-2 h-2 bg-rust rounded-full mt-2"></div>
                   <div>
-                    <div className="font-medium text-green-300">Data Ownership</div>
-                    <div className="text-sm text-gray-400">Your content lives on your node, not corporate servers</div>
+                    <div className="font-medium text-rust">DATA OWNERSHIP</div>
+                    <div className="text-sm text-secondary">Your content lives on your node, not corporate servers</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+                  <div className="w-2 h-2 bg-rust rounded-full mt-2"></div>
                   <div>
-                    <div className="font-medium text-green-300">Censorship Resistant</div>
-                    <div className="text-sm text-gray-400">Distributed network can't be "turned off" or controlled</div>
+                    <div className="font-medium text-rust">CENSORSHIP RESISTANT</div>
+                    <div className="text-sm text-secondary">Distributed network can't be "turned off" or controlled</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+                  <div className="w-2 h-2 bg-rust rounded-full mt-2"></div>
                   <div>
-                    <div className="font-medium text-green-300">Self-Cleaning Quality</div>
-                    <div className="text-sm text-gray-400">Automatic spam removal, quality content promoted</div>
+                    <div className="font-medium text-rust">SELF-CLEANING QUALITY</div>
+                    <div className="text-sm text-secondary">Automatic spam removal, quality content promoted</div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">

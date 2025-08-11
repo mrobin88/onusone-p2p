@@ -1,0 +1,379 @@
+/* Industrial Punk Theme - Dirty Factory Bathroom Aesthetic */
+/* Concrete, rust, grime, and industrial decay */
+
+:root {
+  /* Industrial Colors */
+  --concrete: #2a2a2a;
+  --concrete-dark: #1a1a1a;
+  --concrete-darker: #0a0a0a;
+  --concrete-light: #3a3a3a;
+  
+  /* Rust & Decay */
+  --rust: #8b4513;
+  --rust-light: #a0522d;
+  --rust-dark: #654321;
+  --rust-dirty: #6b4423;
+  
+  /* Metal & Industrial */
+  --metal: #4a4a4a;
+  --metal-dark: #2d2d2d;
+  --metal-light: #6a6a6a;
+  --metal-rusty: #5a4a3a;
+  
+  /* Grime & Dirt */
+  --grime: #3d3d3d;
+  --dirt: #2f2f2f;
+  --stain: #1f1f1f;
+  --filth: #252525;
+  
+  /* Text Colors */
+  --text-primary: #cccccc;
+  --text-secondary: #999999;
+  --text-muted: #666666;
+  --text-rust: #b8860b;
+  
+  /* Typography */
+  --font-industrial: 'Courier New', 'Monaco', 'Menlo', monospace;
+  --font-display: 'Arial Black', 'Impact', sans-serif;
+}
+
+/* Global Industrial Reset */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--concrete-dark);
+  color: var(--text-primary);
+  font-family: var(--font-industrial);
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 20% 80%, var(--stain) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, var(--filth) 0%, transparent 50%),
+    linear-gradient(45deg, var(--concrete-dark) 0%, var(--concrete) 100%);
+}
+
+/* Industrial Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--concrete-darker);
+  border: 1px solid var(--metal-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rust);
+  border: 1px solid var(--metal-dark);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--rust-light);
+}
+
+/* Concrete Background Pattern */
+.concrete-bg {
+  background: var(--concrete);
+  background-image: 
+    linear-gradient(45deg, var(--concrete-dark) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--concrete-dark) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--concrete-dark) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--concrete-dark) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+/* Rusty Metal Container */
+.industrial-container {
+  background: var(--concrete);
+  border: 3px solid var(--rust);
+  border-radius: 0;
+  padding: 20px;
+  margin: 20px;
+  box-shadow: 
+    0 0 20px rgba(139, 69, 19, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.industrial-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(45deg, transparent 30%, rgba(139, 69, 19, 0.1) 30%, rgba(139, 69, 19, 0.1) 70%, transparent 70%),
+    linear-gradient(-45deg, transparent 30%, rgba(139, 69, 19, 0.1) 30%, rgba(139, 69, 19, 0.1) 70%, transparent 70%);
+  background-size: 10px 10px;
+  pointer-events: none;
+}
+
+/* Industrial Text Effects */
+.industrial-text {
+  text-shadow: 
+    1px 1px 0px var(--concrete-darker),
+    2px 2px 0px var(--metal-dark);
+}
+
+.text-rust { color: var(--rust); }
+.text-metal { color: var(--metal); }
+.text-concrete { color: var(--concrete-light); }
+
+/* Industrial Button Styles */
+.btn-industrial {
+  background: var(--metal);
+  border: 2px solid var(--rust);
+  color: var(--text-primary);
+  padding: 12px 24px;
+  font-family: var(--font-industrial);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.btn-industrial:hover {
+  background: var(--rust);
+  color: var(--concrete-darker);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-industrial:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Rusty Button Variants */
+.btn-rusty {
+  background: linear-gradient(45deg, var(--metal), var(--metal-dark));
+  border: 2px solid var(--rust);
+  color: var(--rust);
+}
+
+.btn-rusty:hover {
+  background: linear-gradient(45deg, var(--rust), var(--rust-light));
+  color: var(--concrete-darker);
+}
+
+/* Industrial Input Fields */
+.input-industrial {
+  background: var(--concrete-darker);
+  border: 2px solid var(--metal);
+  color: var(--text-primary);
+  padding: 12px;
+  font-family: var(--font-industrial);
+  font-size: 14px;
+  outline: none;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.input-industrial:focus {
+  border-color: var(--rust);
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(139, 69, 19, 0.3);
+}
+
+/* Industrial Header */
+.industrial-header {
+  background: var(--concrete-darker);
+  border-bottom: 3px solid var(--rust);
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.industrial-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--rust);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
+  text-shadow: 
+    2px 2px 0px var(--concrete-darker),
+    4px 4px 0px var(--metal-dark);
+}
+
+/* Status Indicators */
+.status-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: pulse 2s infinite;
+}
+
+.status-online {
+  background: var(--rust);
+  box-shadow: 0 0 10px rgba(139, 69, 19, 0.5);
+}
+
+.status-offline {
+  background: var(--metal-dark);
+  box-shadow: 0 0 10px rgba(45, 45, 45, 0.5);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Rusty Borders */
+.border-rusty {
+  border: 2px solid var(--rust);
+  background: var(--concrete);
+  position: relative;
+}
+
+.border-rusty::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(45deg, transparent 30%, rgba(139, 69, 19, 0.1) 30%, rgba(139, 69, 19, 0.1) 70%, transparent 70%);
+  background-size: 8px 8px;
+  pointer-events: none;
+}
+
+/* Industrial Panels */
+.industrial-panel {
+  background: var(--concrete);
+  border: 2px solid var(--metal);
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.panel-header {
+  background: var(--concrete-darker);
+  border-bottom: 2px solid var(--rust);
+  padding: 10px 15px;
+  margin: -15px -15px 15px -15px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--rust);
+}
+
+/* Industrial Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 15px 0;
+  text-shadow: 
+    2px 2px 0px var(--concrete-darker),
+    4px 4px 0px var(--metal-dark);
+}
+
+h1 { font-size: 32px; color: var(--rust); }
+h2 { font-size: 24px; color: var(--metal-light); }
+h3 { font-size: 20px; color: var(--concrete-light); }
+
+/* Industrial Grid System */
+.grid-industrial {
+  display: grid;
+  gap: 20px;
+  padding: 20px;
+}
+
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Rusty Metal Effects */
+.glow-rust { box-shadow: 0 0 20px rgba(139, 69, 19, 0.5); }
+.glow-metal { box-shadow: 0 0 20px rgba(74, 74, 74, 0.5); }
+.glow-concrete { box-shadow: 0 0 20px rgba(42, 42, 42, 0.5); }
+
+/* Industrial Loading Spinner */
+.loading-industrial {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--concrete-darker);
+  border-top: 3px solid var(--rust);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Industrial */
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  .industrial-container {
+    margin: 10px;
+    padding: 15px;
+  }
+  
+  .industrial-title {
+    font-size: 20px;
+  }
+}
+
+/* Dirty Bathroom Effects */
+.dirty-overlay {
+  position: relative;
+}
+
+.dirty-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 30% 70%, rgba(45, 45, 45, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 70% 30%, rgba(139, 69, 19, 0.2) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Industrial Decay Textures */
+.texture-concrete {
+  background-image: 
+    linear-gradient(45deg, var(--concrete) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--concrete) 25%, transparent 25%);
+  background-size: 4px 4px;
+  background-position: 0 0, 0 2px;
+}
+
+.texture-rust {
+  background-image: 
+    radial-gradient(circle at 25% 25%, var(--rust-light) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, var(--rust-dark) 0%, transparent 50%);
+  background-size: 8px 8px;
+}
