@@ -1,9 +1,9 @@
 /**
- * The Modern Scribe Layout
- * Three-column Discord-like structure with scholarly aesthetic
+ * Modern Dashboard Layout
+ * Real-time stats from backend systems
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useWalletAuth } from './WalletAuth';
@@ -12,6 +12,14 @@ import CompactWalletWidget from './CompactWalletWidget';
 interface ScribeLayoutProps {
   children: React.ReactNode;
   currentBoard?: string;
+}
+
+interface DashboardStats {
+  totalMessages: number;
+  totalBoards: number;
+  activeUsers: number;
+  backendStatus: 'online' | 'offline';
+  lastUpdate: string;
 }
 
 const BOARDS = [
@@ -28,6 +36,49 @@ const BOARDS = [
 export default function ScribeLayout({ children, currentBoard }: ScribeLayoutProps) {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useWalletAuth();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalMessages: 0,
+    totalBoards: 0,
+    activeUsers: 0,
+    backendStatus: 'offline',
+    lastUpdate: 'Never'
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real stats from backend
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        
+        // Get dashboard stats from backend
+        const response = await fetch('http://localhost:8888/api/dashboard/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setStats({
+            totalMessages: data.totalMessages,
+            totalBoards: data.totalBoards,
+            activeUsers: data.activeUsers,
+            backendStatus: 'online',
+            lastUpdate: new Date().toLocaleTimeString()
+          });
+        } else {
+          setStats(prev => ({ ...prev, backendStatus: 'offline' }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats:', error);
+        setStats(prev => ({ ...prev, backendStatus: 'offline' }));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+    
+    // Refresh stats every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   return (
     <div className="scribe-layout">
@@ -40,7 +91,7 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
           <Link href="/" className="heading-2 text-accent-gold no-underline">
             OnusOne
           </Link>
-          <span className="body-small text-text-ash">The Modern Scribe</span>
+          <span className="body-small text-text-ash">Dashboard</span>
         </div>
         
         <div className="flex items-center space-x-4">
@@ -50,7 +101,7 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
                 👤 {user.displayName}
               </Link>
               <span className="caption text-text-ash">
-                {user.reputation} rep • {user.totalPosts} posts
+                {user.reputation || 0} rep • {user.totalPosts || 0} posts
               </span>
             </>
           )}
@@ -79,21 +130,30 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
             </nav>
           </div>
 
-          {/* Network Status */}
+          {/* Real Network Stats */}
           <div>
-            <h3 className="heading-3 text-text-ash mb-4">Network</h3>
+            <h3 className="heading-3 text-text-ash mb-4">System Status</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-text-slate">Status:</span>
-                <span className="status-online">● Online</span>
+                <span className="text-text-slate">Backend:</span>
+                <span className={`status-${stats.backendStatus}`}>
+                  ● {stats.backendStatus === 'online' ? 'Online' : 'Offline'}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-text-slate">Nodes:</span>
-                <span className="text-text-ash">12 active</span>
+                <span className="text-text-slate">Boards:</span>
+                <span className="text-text-ash">{stats.totalBoards} active</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-slate">Messages:</span>
-                <span className="text-text-ash">1,337 today</span>
+                <span className="text-text-ash">{stats.totalMessages} total</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-slate">Users:</span>
+                <span className="text-text-ash">{stats.activeUsers} online</span>
+              </div>
+              <div className="text-xs text-text-slate mt-2">
+                Updated: {stats.lastUpdate}
               </div>
             </div>
           </div>
@@ -105,19 +165,15 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-text-slate">Reputation:</span>
-                  <span className="text-accent-gold font-semibold">{user.reputation}</span>
+                  <span className="text-accent-gold font-semibold">{user.reputation || 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-slate">Posts:</span>
-                  <span className="text-text-ash">{user.totalPosts}</span>
+                  <span className="text-text-ash">{user.totalPosts || 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-slate">Staked:</span>
-                  <span className="text-text-ash">{user.totalStaked} ONU</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-slate">Online:</span>
-                  <span className="text-text-ash">{user.networkTime}</span>
+                  <span className="text-text-ash">{user.totalStaked || 0} ONU</span>
                 </div>
               </div>
             </div>
@@ -204,6 +260,14 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
           background: rgba(212, 175, 55, 0.2);
           color: var(--accent-gold);
           font-weight: 600;
+        }
+
+        .status-online {
+          color: #10b981;
+        }
+
+        .status-offline {
+          color: #ef4444;
         }
 
         .text-accent-gold {

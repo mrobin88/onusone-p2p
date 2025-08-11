@@ -28,6 +28,18 @@ interface Board {
   createdAt: number;
 }
 
+const BOARDS = [
+  { slug: 'general', name: 'General Discussion', description: 'General topics and discussions', createdAt: Date.now() },
+  { slug: 'tech', name: 'Technology', description: 'Tech discussions and news', createdAt: Date.now() },
+  { slug: 'crypto', name: 'Cryptocurrency', description: 'Crypto and blockchain talk', createdAt: Date.now() },
+  { slug: 'dev', name: 'Development', description: 'Development and coding discussions', createdAt: Date.now() },
+  { slug: 'community', name: 'Community', description: 'Community topics and events', createdAt: Date.now() },
+  { slug: 'gaming', name: 'Gaming', description: 'Gaming and entertainment', createdAt: Date.now() },
+  { slug: 'art', name: 'Art & Design', description: 'Creative arts and design', createdAt: Date.now() },
+  { slug: 'music', name: 'Music', description: 'Music and audio discussions', createdAt: Date.now() },
+  { slug: 'trading', name: 'Trading', description: 'Trading and finance', createdAt: Date.now() }
+];
+
 export class WorkingBackend {
   private app: express.Application;
   private server: any;
@@ -74,6 +86,45 @@ export class WorkingBackend {
         uptime: process.uptime(),
         database: this.supabase ? 'Supabase' : 'Local'
       });
+    });
+
+    // Dashboard stats endpoint
+    this.app.get('/api/dashboard/stats', async (req, res) => {
+      try {
+        let totalMessages = 0;
+        let totalBoards = 0;
+        let activeUsers = 0;
+
+        if (this.supabase) {
+          // Get total messages count
+          const { count: messageCount } = await this.supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true });
+          
+          // Get total boards count
+          const { count: boardCount } = await this.supabase
+            .from('boards')
+            .select('*', { count: 'exact', head: true });
+          
+          totalMessages = messageCount || 0;
+          totalBoards = boardCount || 0;
+        } else {
+          // Mock stats for local development
+          totalMessages = Math.floor(Math.random() * 50) + 10;
+          totalBoards = BOARDS.length;
+        }
+
+        res.json({
+          totalMessages,
+          totalBoards,
+          activeUsers: 1, // Will be dynamic when user system is implemented
+          backendStatus: 'online',
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Failed to get dashboard stats:', error);
+        res.status(500).json({ error: 'Failed to get dashboard stats' });
+      }
     });
 
     // Get all boards
