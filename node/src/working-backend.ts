@@ -15,19 +15,19 @@ interface Message {
   content: string;
   author: string;
   boardslug: string;
-  authorWallet?: string;
-  parentId?: string;
+  authorwallet?: string;
+  parentid?: string;
   timestamp: number;
-  ipfsHash?: string;
-  stakeAmount?: number;
-  totalStakes?: number;
-  decayScore?: number;
-  rewardPool?: number;
-  reputationImpact?: number;
+  ipfshash?: string;
+  stakeamount?: number;
+  totalstakes?: number;
+  decayscore?: number;
+  rewardpool?: number;
+  reputationimpact?: number;
   likes?: number;
   dislikes?: number;
-  isPinned?: boolean;
-  isDeleted?: boolean;
+  ispinned?: boolean;
+  isdeleted?: boolean;
   metadata?: any;
 }
 
@@ -88,7 +88,7 @@ export class WorkingBackend {
 
   private setupRoutes() {
     // Health check
-    this.app.get('/health', (req, res) => {
+    this.app.get('/health', (req: express.Request, res: express.Response) => {
       res.json({
         status: 'healthy',
         backend: 'WorkingBackend',
@@ -99,7 +99,7 @@ export class WorkingBackend {
     });
 
     // Dashboard stats endpoint
-    this.app.get('/api/dashboard/stats', async (req, res) => {
+    this.app.get('/api/dashboard/stats', async (req: express.Request, res: express.Response) => {
       try {
         let totalMessages = 0;
         let totalBoards = 0;
@@ -138,7 +138,7 @@ export class WorkingBackend {
     });
 
     // Get all boards
-    this.app.get('/api/boards', async (req, res) => {
+    this.app.get('/api/boards', async (req: express.Request, res: express.Response) => {
       try {
         if (this.supabase) {
           const { data, error } = await this.supabase
@@ -164,7 +164,7 @@ export class WorkingBackend {
     });
 
     // Get messages for a board
-    this.app.get('/api/boards/:slug/messages', async (req, res) => {
+    this.app.get('/api/boards/:slug/messages', async (req: express.Request, res: express.Response) => {
       try {
         const { slug } = req.params;
         
@@ -185,18 +185,18 @@ export class WorkingBackend {
               content: 'Welcome to the ' + slug + ' board!',
               author: 'system',
               boardslug: slug,
-              authorWallet: 'system',
+              authorwallet: 'system',
               timestamp: Date.now(),
-              ipfsHash: undefined,
-              stakeAmount: 0,
-              totalStakes: 0,
-              decayScore: 100,
-              rewardPool: 0,
-              reputationImpact: 0,
+              ipfshash: undefined,
+              stakeamount: 0,
+              totalstakes: 0,
+              decayscore: 100,
+              rewardpool: 0,
+              reputationimpact: 0,
               likes: 0,
               dislikes: 0,
-              isPinned: false,
-              isDeleted: false,
+              ispinned: false,
+              isdeleted: false,
               metadata: {}
             }
           ];
@@ -209,7 +209,7 @@ export class WorkingBackend {
     });
 
     // Create a new message
-    this.app.post('/api/boards/:slug/messages', async (req, res) => {
+    this.app.post('/api/boards/:slug/messages', async (req: express.Request, res: express.Response) => {
       try {
         const { slug } = req.params;
         const { content, author } = req.body;
@@ -223,9 +223,9 @@ export class WorkingBackend {
           content,
           author,
           boardslug: slug,
-          authorwallet: req.body.authorWallet || 'anonymous',
+          authorwallet: req.body.authorwallet || 'anonymous',
           timestamp: Date.now(),
-          ipfshash: req.body.ipfsHash || undefined,
+          ipfshash: req.body.ipfshash || undefined,
           stakeamount: 0,
           totalstakes: 0,
           decayscore: 100,
@@ -258,7 +258,7 @@ export class WorkingBackend {
     });
 
     // Get user profile
-    this.app.get('/api/users/:username', async (req, res) => {
+    this.app.get('/api/users/:username', async (req: express.Request, res: express.Response) => {
       try {
         const { username } = req.params;
         
@@ -287,7 +287,7 @@ export class WorkingBackend {
     });
 
     // WebSocket endpoint for real-time updates
-    this.app.get('/ws', (req, res) => {
+    this.app.get('/ws', (req: express.Request, res: express.Response) => {
       res.json({
         message: 'WebSocket endpoint ready',
         backend: 'WorkingBackend',
@@ -296,7 +296,7 @@ export class WorkingBackend {
     });
 
     // Test endpoint
-    this.app.get('/api/test', (req, res) => {
+    this.app.get('/api/test', (req: express.Request, res: express.Response) => {
       res.json({
         message: 'WorkingBackend is running and functional!',
         backend: 'WorkingBackend',
