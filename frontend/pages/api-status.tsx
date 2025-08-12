@@ -45,7 +45,7 @@ export default function APIStatus() {
     },
     {
       name: 'P2P Network (Local)',
-      path: 'http://localhost:8888/health',
+              path: 'https://onusone-p2p.onrender.com/health',
       method: 'GET',
       status: realP2PStatus.isConnected ? 'working' : 'error',
       description: 'Local P2P node health check (optional for app)'

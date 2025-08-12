@@ -53,7 +53,7 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
         setLoading(true);
         
         // Get dashboard stats from backend
-        const response = await fetch('http://localhost:8888/api/dashboard/stats');
+        const response = await fetch('https://onusone-p2p.onrender.com/api/dashboard/stats');
         if (response.ok) {
           const data = await response.json();
           setStats({
@@ -84,9 +84,6 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
   return (
     <div className="min-h-screen concrete-bg dirty-overlay">
 
-      {/* Compact Wallet Widget */}
-      <CompactWalletWidget />
-      
       {/* Industrial Header */}
       <header className="industrial-header p-4">
         <div className="container mx-auto flex justify-between items-center">
@@ -101,6 +98,7 @@ export default function ScribeLayout({ children, currentBoard }: ScribeLayoutPro
           </div>
           
           <div className="flex items-center space-x-4">
+            <CompactWalletWidget />
             {isAuthenticated && user && (
               <>
                 <Link href="/profile" className="btn-industrial px-4 py-2">

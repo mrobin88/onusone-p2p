@@ -24,14 +24,14 @@ export const ONU_CONFIG = {
 export const P2P_CONFIG = {
   // Backend node URLs - will be overridden by environment variables
   BOOTSTRAP_NODES: [
-    process.env.NEXT_PUBLIC_P2P_BACKEND_URL || 'http://localhost:8888',
+    process.env.NEXT_PUBLIC_P2P_BACKEND_URL || 'https://onusone-p2p.onrender.com',
     process.env.NEXT_PUBLIC_P2P_BACKEND_URL_2 || 'http://localhost:8889',
     process.env.NEXT_PUBLIC_P2P_BACKEND_URL_3 || 'http://localhost:8890'
   ],
 
   // WebSocket endpoints
   WEBSOCKET_ENDPOINTS: [
-    (process.env.NEXT_PUBLIC_P2P_BACKEND_URL || 'http://localhost:8888').replace('http://', 'ws://').replace('https://', 'wss://'),
+    (process.env.NEXT_PUBLIC_P2P_BACKEND_URL || 'https://onusone-p2p.onrender.com').replace('http://', 'ws://').replace('https://', 'wss://'),
     (process.env.NEXT_PUBLIC_P2P_BACKEND_URL_2 || 'http://localhost:8889').replace('http://', 'ws://').replace('https://', 'wss://'),
     (process.env.NEXT_PUBLIC_P2P_BACKEND_URL_3 || 'http://localhost:8890').replace('http://', 'ws://').replace('https://', 'wss://')
   ],

@@ -64,7 +64,7 @@ export default function Home() {
             INDUSTRIAL P2P NETWORK
           </h1>
           <p className="text-2xl max-w-4xl mx-auto leading-relaxed industrial-text mb-8">
-            DECENTRALIZED MESSAGING WITH INDUSTRIAL AESTHETICS. NO CORPORATE BULLSHIT, JUST PURE P2P COMMUNICATION.
+            P2P MESSAGING. INDUSTRIAL AESTHETIC. NO CORPORATE BULLSHIT.
           </p>
           <div className="flex justify-center space-x-6">
             {!isAuthenticated && (
@@ -99,7 +99,7 @@ export default function Home() {
               P2P MESSAGING
             </div>
             <p className="industrial-text">
-              DIRECT PEER-TO-PEER COMMUNICATION WITH NO CENTRAL SERVERS. YOUR MESSAGES STAY BETWEEN YOU AND YOUR PEERS.
+              DIRECT P2P COMMUNICATION. NO CENTRAL SERVERS.
             </p>
           </div>
 
@@ -109,7 +109,7 @@ export default function Home() {
               INDUSTRIAL AESTHETIC
             </div>
             <p className="industrial-text">
-              CONCRETE, RUST, AND METAL. NO BRIGHT COLORS, NO TOY LOOKS. JUST PURE INDUSTRIAL DECAY.
+              CONCRETE, RUST, METAL. NO BRIGHT COLORS.
             </p>
           </div>
 
@@ -119,7 +119,7 @@ export default function Home() {
               DECENTRALIZED
             </div>
             <p className="industrial-text">
-              NO CORPORATE CONTROL, NO CENSORSHIP, NO DATA HARVESTING. TRUE OWNERSHIP OF YOUR COMMUNICATION.
+              NO CORPORATE CONTROL. NO CENSORSHIP.
             </p>
           </div>
         </div>
@@ -156,7 +156,7 @@ export default function Home() {
             READY TO ENTER THE INDUSTRIAL NETWORK?
           </h2>
           <p className="text-xl industrial-text mb-8">
-            JOIN THE P2P REVOLUTION. NO ALGORITHMS, NO CORPORATIONS, NO BULLSHIT.
+            JOIN THE P2P NETWORK. NO ALGORITHMS.
           </p>
           <div className="flex justify-center space-x-6">
             <button onClick={handleGuestEnter} className="btn-industrial btn-rusty text-lg px-8 py-4">

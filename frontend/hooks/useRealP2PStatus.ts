@@ -28,7 +28,7 @@ export function useRealP2PStatus() {
     const checkNodeStatus = async () => {
       try {
         // Try to connect to real local node
-        const response = await fetch('http://localhost:8888/health', {
+        const response = await fetch('https://onusone-p2p.onrender.com/health', {
           method: 'GET',
           signal: AbortSignal.timeout(3000)
         });
