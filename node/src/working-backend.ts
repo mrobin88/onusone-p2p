@@ -14,7 +14,7 @@ interface Message {
   id: string;
   content: string;
   author: string;
-  boardSlug: string;
+  boardslug: string; // Changed from boardSlug to match database
   timestamp: number;
   ipfsHash?: string;
   stakeAmount?: number;
@@ -162,7 +162,7 @@ export class WorkingBackend {
           const { data, error } = await this.supabase
             .from('messages')
             .select('*')
-            .eq('boardSlug', slug)
+            .eq('boardslug', slug) // Changed from boardSlug to match database
             .order('timestamp', { ascending: false });
           
           if (error) throw error;
@@ -174,7 +174,7 @@ export class WorkingBackend {
               id: uuidv4(),
               content: 'Welcome to the ' + slug + ' board!',
               author: 'system',
-              boardSlug: slug,
+              boardslug: slug, // Changed from boardSlug to match database
               timestamp: Date.now(),
               decayScore: 100
             }
@@ -201,7 +201,7 @@ export class WorkingBackend {
           id: uuidv4(),
           content,
           author,
-          boardSlug: slug,
+          boardslug: slug, // Changed from boardSlug to match database
           timestamp: Date.now(),
           decayScore: 100
         };
