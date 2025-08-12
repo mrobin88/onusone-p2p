@@ -14,11 +14,21 @@ interface Message {
   id: string;
   content: string;
   author: string;
-  boardslug: string; // Changed from boardSlug to match database
+  boardslug: string;
+  authorWallet?: string;
+  parentId?: string;
   timestamp: number;
   ipfsHash?: string;
   stakeAmount?: number;
+  totalStakes?: number;
   decayScore?: number;
+  rewardPool?: number;
+  reputationImpact?: number;
+  likes?: number;
+  dislikes?: number;
+  isPinned?: boolean;
+  isDeleted?: boolean;
+  metadata?: any;
 }
 
 interface Board {
@@ -162,7 +172,7 @@ export class WorkingBackend {
           const { data, error } = await this.supabase
             .from('messages')
             .select('*')
-            .eq('boardslug', slug) // Changed from boardSlug to match database
+            .eq('boardslug', slug)
             .order('timestamp', { ascending: false });
           
           if (error) throw error;
@@ -174,9 +184,20 @@ export class WorkingBackend {
               id: uuidv4(),
               content: 'Welcome to the ' + slug + ' board!',
               author: 'system',
-              boardslug: slug, // Changed from boardSlug to match database
+              boardslug: slug,
+              authorWallet: 'system',
               timestamp: Date.now(),
-              decayScore: 100
+              ipfsHash: undefined,
+              stakeAmount: 0,
+              totalStakes: 0,
+              decayScore: 100,
+              rewardPool: 0,
+              reputationImpact: 0,
+              likes: 0,
+              dislikes: 0,
+              isPinned: false,
+              isDeleted: false,
+              metadata: {}
             }
           ];
           res.json(mockMessages);
@@ -197,13 +218,24 @@ export class WorkingBackend {
           return res.status(400).json({ error: 'Content and author are required' });
         }
 
-        const message: Message = {
+        const message = {
           id: uuidv4(),
           content,
           author,
-          boardslug: slug, // Changed from boardSlug to match database
+          boardslug: slug,
+          authorwallet: req.body.authorWallet || 'anonymous',
           timestamp: Date.now(),
-          decayScore: 100
+          ipfshash: req.body.ipfsHash || undefined,
+          stakeamount: 0,
+          totalstakes: 0,
+          decayscore: 100,
+          rewardpool: 0,
+          reputationimpact: 0,
+          likes: 0,
+          dislikes: 0,
+          ispinned: false,
+          isdeleted: false,
+          metadata: {}
         };
 
         if (this.supabase) {
