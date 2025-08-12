@@ -97,16 +97,14 @@ export default function P2PDemo() {
             <>
               <span className="industrial-text">WELCOME, {user?.username?.toUpperCase()}!</span>
               <Button onClick={() => logout()} variant="secondary" size="sm">
-                    Logout
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={() => router.push('/auth/login')} size="sm">
-                  Join Network
-                </Button>
-              )}
-            </div>
-          </div>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => router.push('/auth/login')} size="sm">
+              Join Network
+            </Button>
+          )}
         </div>
       </header>
 
