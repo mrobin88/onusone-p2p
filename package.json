@@ -17,6 +17,7 @@
     "build:frontend": "cd frontend && npm run build",
     "build:node": "cd node && npm run build",
     "test": "npm run test:frontend && npm run test:node && npm run test:contracts",
+    "test:core": "node test-core-p2p.js",
     "test:frontend": "cd frontend && npm run test",
     "test:node": "cd node && npm run test",
     "test:contracts": "cd contracts && npm run test",
