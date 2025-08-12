@@ -11,7 +11,7 @@ const https = require('https');
 
 // Test Configuration
 const TEST_CONFIG = {
-  backendUrl: 'http://localhost:8889',
+  backendUrl: 'http://localhost:8888',
   renderUrl: 'https://onusone-p2p.onrender.com',
   testTimeout: 10000
 };
