@@ -13,10 +13,7 @@ const nextConfig = {
     // Ignore ESLint errors during build for deployment
     ignoreDuringBuilds: true,
   },
-  // Disable static generation for problematic pages
-  async generateStaticParams() {
-    return [];
-  },
+
   // Skip problematic pages during build
   async redirects() {
     return [
