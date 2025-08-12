@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useWalletAuth } from './WalletAuth';
 import CompactWalletWidget from './CompactWalletWidget';
-import '../styles/industrial-punk.css';
+
 
 interface ScribeLayoutProps {
   children: React.ReactNode;

@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useWalletAuth } from '../components/WalletAuth';
 import Button from '../components/Button';
-import '../styles/industrial-punk.css';
+
 
 export default function P2PDemo() {
   const router = useRouter();

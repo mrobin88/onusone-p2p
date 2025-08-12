@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { useWalletAuth } from '../../components/WalletAuth';
 import ScribeLayout from '../../components/ScribeLayout';
 import Button from '../../components/Button';
-import '../../styles/industrial-punk.css';
+
 
 interface Board {
   slug: string;

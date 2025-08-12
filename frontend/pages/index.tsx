@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useWalletAuth } from '../components/WalletAuth';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import Button from '../components/Button';
-import '../styles/industrial-punk.css';
+
 
 export default function Home() {
   const router = useRouter();
