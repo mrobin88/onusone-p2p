@@ -6,7 +6,7 @@ import { WalletAuthProvider } from '../components/WalletAuth';
 import { ToastProvider } from '../components/Toast';
 import ErrorBoundary from '../components/ErrorBoundary';
 import '../styles/globals.css';
-import '../styles/industrial-punk.css';
+import '../styles/clean-modern.css';
 
 export default function App({ Component, pageProps }: AppProps) {
   return (

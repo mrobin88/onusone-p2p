@@ -3,82 +3,120 @@
  * Pure wallet-based profile using local storage
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletAuth } from '../components/WalletAuth';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import CleanNavbar from '../components/CleanNavbar';
+
+interface UserStats {
+  totalPosts: number;
+  totalStaked: number;
+  totalEarned: number;
+  reputation: number;
+  rank: string;
+  joinedAt: string;
+}
 
 export default function Profile() {
   const router = useRouter();
+  const { connected, publicKey } = useWallet();
   const { user, profile, isAuthenticated, logout } = useWalletAuth();
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!isAuthenticated || !user || !profile) {
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadUserStats();
+    }
+  }, [isAuthenticated, user]);
+
+  const loadUserStats = async () => {
+    try {
+      setLoading(true);
+      // TODO: Load real stats from backend
+      setUserStats({
+        totalPosts: user.totalPosts || 0,
+        totalStaked: user.totalStaked || 0,
+        totalEarned: user.totalEarned || 0,
+        reputation: user.reputation || 0,
+        rank: user.rank || 'Newcomer',
+        joinedAt: user.joinedAt || 'Recently'
+      });
+    } catch (error) {
+      console.error('Failed to load user stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!connected) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Connect Your Wallet</h1>
-          <p className="text-gray-400 mb-6">You need to connect your wallet to view your profile</p>
-          <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700" />
+      <>
+        <CleanNavbar />
+        <div className="container mx-auto px-4 py-16 text-center">
+          <div className="card max-w-md mx-auto">
+            <h1 className="text-2xl font-bold mb-4">Connect Your Wallet</h1>
+            <p className="text-secondary mb-6">
+              You need to connect your wallet to view your profile
+            </p>
+            <Link href="/" className="btn btn-primary">
+              Go Home
+            </Link>
+          </div>
         </div>
-      </div>
+      </>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <>
+        <CleanNavbar />
+        <div className="container mx-auto px-4 py-16 text-center">
+          <div className="card max-w-md mx-auto">
+            <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+            <p className="text-secondary mb-6">
+              Please authenticate to view your profile
+            </p>
+            <Link href="/" className="btn btn-primary">
+              Go Home
+            </Link>
+          </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <>
       <Head>
         <title>My Profile - OnusOne P2P</title>
         <meta name="description" content="Your wallet profile and network statistics" />
       </Head>
 
-      {/* Header */}
-      <nav className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-6">
-              <Link href="/" className="text-xl font-bold text-blue-400">
-                OnusOne P2P
-              </Link>
-              <Link href="/boards" className="text-gray-300 hover:text-white">
-                📋 Boards
-              </Link>
-              <Link href="/profile" className="text-blue-400 font-medium">
-                👤 Profile
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700" />
-              <button
-                onClick={logout}
-                className="text-gray-400 hover:text-white"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <CleanNavbar />
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8">
         {/* Profile Header */}
-        <div className="bg-gray-900 rounded-lg p-8 mb-8">
+        <div className="card mb-8">
           <div className="flex items-center space-x-6 mb-6">
-            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-2xl font-bold">
-              {user.displayName.slice(0, 2).toUpperCase()}
+            <div className="w-20 h-20 bg-gradient-to-r from-primary to-primary-light rounded-full flex items-center justify-center text-2xl font-bold text-white">
+              {user.username?.slice(0, 2).toUpperCase() || 'U'}
             </div>
             <div>
-              <h1 className="text-3xl font-bold">{user.displayName}</h1>
-              <p className="text-gray-400 font-mono text-sm break-all">
-                {user.walletAddress}
+              <h1 className="text-3xl font-bold">{user.username || 'User'}</h1>
+              <p className="text-secondary font-mono text-sm break-all">
+                {publicKey?.toString()}
               </p>
               <div className="flex items-center space-x-4 mt-2">
-                <span className="px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                  Reputation: {user.reputation}
+                <span className="px-3 py-1 bg-success text-white text-sm rounded-full">
+                  Reputation: {userStats?.reputation || 0}
                 </span>
-                <span className="text-gray-400 text-sm">
-                  Member since {user.joinedAt}
+                <span className="text-secondary text-sm">
+                  Rank: {userStats?.rank || 'Newcomer'}
                 </span>
               </div>
             </div>
@@ -87,95 +125,78 @@ export default function Profile() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-900 rounded-lg p-6">
-            <div className="text-3xl font-bold text-blue-400 mb-2">
-              {user.totalPosts}
+          <div className="card">
+            <div className="text-3xl font-bold text-primary mb-2">
+              {userStats?.totalPosts || 0}
             </div>
-            <div className="text-gray-400">Total Posts</div>
+            <div className="text-secondary">Total Posts</div>
           </div>
           
-          <div className="bg-gray-900 rounded-lg p-6">
-            <div className="text-3xl font-bold text-green-400 mb-2">
-              {user.totalStaked}
+          <div className="card">
+            <div className="text-3xl font-bold text-success mb-2">
+              {userStats?.totalStaked || 0}
             </div>
-            <div className="text-gray-400">ONU Staked</div>
+            <div className="text-secondary">ONU Staked</div>
           </div>
           
-          <div className="bg-gray-900 rounded-lg p-6">
-            <div className="text-3xl font-bold text-purple-400 mb-2">
-              {user.networkTime}
+          <div className="card">
+            <div className="text-3xl font-bold text-warning mb-2">
+              {userStats?.totalEarned || 0}
             </div>
-            <div className="text-gray-400">Network Time</div>
+            <div className="text-secondary">ONU Earned</div>
           </div>
           
-          <div className="bg-gray-900 rounded-lg p-6">
-            <div className="text-3xl font-bold text-yellow-400 mb-2">
-              {Math.floor(profile.stakes.length * 0.1)}
+          <div className="card">
+            <div className="text-3xl font-bold text-primary mb-2">
+              {userStats?.reputation || 0}
             </div>
-            <div className="text-gray-400">ONU Earned</div>
+            <div className="text-secondary">Reputation</div>
           </div>
         </div>
 
-        {/* Recent Posts */}
-        <div className="bg-gray-900 rounded-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Recent Posts</h2>
-          {profile.posts.length > 0 ? (
-            <div className="space-y-4">
-              {profile.posts.slice(0, 5).map((post) => (
-                <div key={post.id} className="border-l-4 border-blue-500 pl-4 py-2">
-                  <p className="text-gray-300 mb-2">{post.content}</p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <span>📋 {post.boardSlug}</span>
-                    <span>🕒 {new Date(post.createdAt).toLocaleDateString()}</span>
-                    <span>💰 {post.stakeTotal} ONU staked</span>
-                    <span>❤️ {post.engagements} engagements</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-400">No posts yet. Start posting to build your profile!</p>
-          )}
+        {/* Quick Actions */}
+        <div className="card mb-8">
+          <div className="card-header">
+            <h2 className="card-title">Quick Actions</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link href="/boards" className="btn btn-primary">
+              📋 View Boards
+            </Link>
+            <Link href="/buy-onu" className="btn btn-success">
+              💰 Buy ONU Tokens
+            </Link>
+            <Link href="/leaderboard" className="btn btn-secondary">
+              🏆 View Leaderboard
+            </Link>
+          </div>
         </div>
 
-        {/* Staking Activity */}
-        <div className="bg-gray-900 rounded-lg p-8">
-          <h2 className="text-2xl font-bold mb-6">Staking Activity</h2>
-          {profile.stakes.length > 0 ? (
-            <div className="space-y-3">
-              {profile.stakes.slice(0, 10).map((stake, index) => (
-                <div key={index} className="flex justify-between items-center py-2 border-b border-gray-800">
-                  <div>
-                    <span className="text-green-400 font-bold">{stake.amount} ONU</span>
-                    <span className="text-gray-400 ml-2">staked on post</span>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {new Date(stake.timestamp).toLocaleDateString()}
-                  </div>
-                </div>
-              ))}
+        {/* Account Info */}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">Account Information</h2>
+          </div>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-secondary">Username:</span>
+              <span className="font-medium">{user.username || 'Not set'}</span>
             </div>
-          ) : (
-            <p className="text-gray-400">No staking activity yet. Stake on posts to support the network!</p>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="mt-8 text-center space-x-4">
-          <button
-            onClick={() => router.push('/boards')}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg"
-          >
-            📋 Browse Boards
-          </button>
-          <button
-            onClick={() => router.push('/become-node')}
-            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg"
-          >
-            💰 Become Node
-          </button>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-secondary">Wallet Address:</span>
+              <span className="font-mono text-sm">{publicKey?.toString()}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-secondary">Member Since:</span>
+              <span className="font-medium">{userStats?.joinedAt || 'Recently'}</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-secondary">Current Rank:</span>
+              <span className="font-medium text-primary">{userStats?.rank || 'Newcomer'}</span>
+            </div>
+          </div>
         </div>
       </main>
-    </div>
+    </>
   );
 }

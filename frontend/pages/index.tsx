@@ -1,188 +1,117 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Head from 'next/head';
-import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { useWalletAuth } from '../components/WalletAuth';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import Button from '../components/Button';
-
+import CleanNavbar from '../components/CleanNavbar';
 
 export default function Home() {
-  const router = useRouter();
-  const { user, isAuthenticated, logout, isConnecting, createGuestAccount, canPost } = useWalletAuth();
-  
-  const handleLogout = () => {
-    logout();
-    router.push('/');
-  };
-
-  const handleGuestEnter = () => {
-    createGuestAccount();
-    router.push('/boards');
-  };
+  const { user, isAuthenticated } = useWalletAuth();
 
   return (
-    <div className="min-h-screen concrete-bg dirty-overlay">
+    <>
       <Head>
-        <title>ONUSONE P2P - INDUSTRIAL NETWORK</title>
-        <meta name="description" content="Industrial punk P2P messaging network" />
-        <link rel="icon" href="/favicon.ico" />
+        <title>ONUSONE P2P - Decentralized Social Trading</title>
+        <meta name="description" content="Decentralized P2P messaging with ONU token economics, staking, and rewards" />
       </Head>
 
-      {/* Industrial Header */}
-      <header className="industrial-header">
-        <div className="flex items-center space-x-6">
-          <h1 className="industrial-title industrial-text">ONUSONE P2P</h1>
-          <div className="flex items-center space-x-2 text-sm">
-            <div className="status-indicator status-online"></div>
-            <span className="industrial-text">INDUSTRIAL NETWORK</span>
-          </div>
-        </div>
-        <div className="flex items-center space-x-4">
-          {isAuthenticated ? (
-            <>
-              <span className="industrial-text">WELCOME, {user?.username?.toUpperCase()}</span>
-              <button onClick={handleLogout} className="btn-industrial">
-                LOGOUT
-              </button>
-            </>
-          ) : (
-            <div className="flex items-center space-x-4">
-              <WalletMultiButton />
-              <button onClick={handleGuestEnter} className="btn-industrial btn-rusty">
-                GUEST ENTER
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+      <CleanNavbar />
 
-      {/* Main Content */}
-      <main className="industrial-container">
+      <main className="container mx-auto px-4 py-8">
         {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="industrial-text text-rust text-6xl font-bold mb-8">
-            INDUSTRIAL P2P NETWORK
+        <section className="text-center mb-16">
+          <h1 className="text-5xl font-bold text-primary mb-6">
+            ONUSONE P2P Network
           </h1>
-          <p className="text-2xl max-w-4xl mx-auto leading-relaxed industrial-text mb-8">
-            P2P MESSAGING. INDUSTRIAL AESTHETIC. NO CORPORATE BULLSHIT.
+          <p className="text-xl text-secondary max-w-3xl mx-auto mb-8">
+            Decentralized messaging platform with integrated ONU token economics. 
+            Stake tokens, earn rewards, and participate in the future of social trading.
           </p>
-          <div className="flex justify-center space-x-6">
-            {!isAuthenticated && (
-              <>
-                <button onClick={handleGuestEnter} className="btn-industrial btn-rusty text-lg px-8 py-4">
-                  ENTER AS GUEST
-                </button>
-                <button 
-                  onClick={() => router.push('/auth/login')} 
-                  className="btn-industrial text-lg px-8 py-4"
-                >
-                  CONNECT WALLET
-                </button>
-              </>
-            )}
-            {isAuthenticated && (
-              <button 
-                onClick={() => router.push('/boards')} 
-                className="btn-industrial btn-rusty text-lg px-8 py-4"
-              >
-                ENTER NETWORK
-              </button>
-            )}
+          <div className="flex justify-center gap-4">
+            <Link href="/boards" className="btn btn-primary text-lg px-8 py-4">
+              Start Messaging
+            </Link>
+            <Link href="/buy-onu" className="btn btn-secondary text-lg px-8 py-4">
+              Buy ONU Tokens
+            </Link>
           </div>
-        </div>
+        </section>
 
-        {/* Feature Grid */}
-        <div className="grid-industrial grid-3 gap-8 mb-16">
-          <div className="industrial-panel border-rusty">
-            <div className="panel-header">
-              <span className="mr-3">🌐</span>
-              P2P MESSAGING
+        {/* Features Grid */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">🌐 P2P Messaging</h3>
             </div>
-            <p className="industrial-text">
-              DIRECT P2P COMMUNICATION. NO CENTRAL SERVERS.
+            <p className="text-secondary">
+              Direct peer-to-peer communication with no central servers. 
+              Your messages are stored on IPFS and replicated across the network.
             </p>
           </div>
 
-          <div className="industrial-panel border-rusty">
-            <div className="panel-header">
-              <span className="mr-3">🏭</span>
-              INDUSTRIAL AESTHETIC
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">💰 Token Economics</h3>
             </div>
-            <p className="industrial-text">
-              CONCRETE, RUST, METAL. NO BRIGHT COLORS.
+            <p className="text-secondary">
+              Stake ONU tokens on quality content, earn rewards, and participate 
+              in the network's economic ecosystem.
             </p>
           </div>
 
-          <div className="industrial-panel border-rusty">
-            <div className="panel-header">
-              <span className="mr-3">🔒</span>
-              DECENTRALIZED
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">🔒 Decentralized</h3>
             </div>
-            <p className="industrial-text">
-              NO CORPORATE CONTROL. NO CENSORSHIP.
+            <p className="text-secondary">
+              Built on blockchain technology with no corporate control. 
+              True ownership of your data and communication.
             </p>
           </div>
-        </div>
+        </section>
 
-        {/* Network Stats */}
-        <div className="industrial-panel border-rusty">
-          <div className="panel-header">
-            <span className="mr-3">📊</span>
-            NETWORK STATUS
+        {/* Stats Section */}
+        <section className="card mb-16">
+          <div className="card-header">
+            <h2 className="card-title">Network Statistics</h2>
           </div>
-          <div className="grid-industrial grid-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="text-center">
-              <div className="text-3xl font-bold text-rust industrial-text">ACTIVE</div>
-              <div className="text-sm">NETWORK STATUS</div>
+              <div className="text-3xl font-bold text-primary">Active</div>
+              <div className="text-secondary">Network Status</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-metal industrial-text">P2P</div>
-              <div className="text-sm">PROTOCOL</div>
+              <div className="text-3xl font-bold text-success">P2P</div>
+              <div className="text-secondary">Protocol</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-concrete industrial-text">INDUSTRIAL</div>
-              <div className="text-sm">AESTHETIC</div>
+              <div className="text-3xl font-bold text-warning">ONU</div>
+              <div className="text-secondary">Token</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-rust industrial-text">READY</div>
-              <div className="text-sm">FOR USE</div>
+              <div className="text-3xl font-bold text-primary">Ready</div>
+              <div className="text-secondary">For Use</div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Call to Action */}
-        <div className="text-center mt-16">
-          <h2 className="industrial-text text-metal text-3xl font-bold mb-6">
-            READY TO ENTER THE INDUSTRIAL NETWORK?
+        {/* CTA Section */}
+        <section className="text-center">
+          <h2 className="text-3xl font-bold text-primary mb-6">
+            Ready to Join the Network?
           </h2>
-          <p className="text-xl industrial-text mb-8">
-            JOIN THE P2P NETWORK. NO ALGORITHMS.
+          <p className="text-lg text-secondary mb-8">
+            Connect your wallet and start participating in the decentralized future.
           </p>
-          <div className="flex justify-center space-x-6">
-            <button onClick={handleGuestEnter} className="btn-industrial btn-rusty text-lg px-8 py-4">
-              START MESSAGING
-            </button>
-            <button 
-              onClick={() => router.push('/p2p-demo')} 
-              className="btn-industrial text-lg px-8 py-4"
-            >
-              VIEW DEMO
-            </button>
+          <div className="flex justify-center gap-4">
+            <Link href="/boards" className="btn btn-primary text-lg px-8 py-4">
+              Explore Boards
+            </Link>
+            <Link href="/profile" className="btn btn-secondary text-lg px-8 py-4">
+              View Profile
+            </Link>
           </div>
-        </div>
+        </section>
       </main>
-
-      {/* Industrial Footer */}
-      <footer className="industrial-header mt-16">
-        <div className="text-center">
-          <p className="industrial-text text-sm">
-            ONUSONE P2P - INDUSTRIAL DECENTRALIZED NETWORK
-          </p>
-          <p className="text-xs text-secondary mt-2">
-            NO CORPORATE CONTROL. NO BRIGHT COLORS. JUST PURE INDUSTRIAL P2P.
-          </p>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 }
