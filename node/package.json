@@ -15,7 +15,8 @@
     "node:storage": "tsx src/working-backend.ts",
     "orbit:dev": "tsx watch src/orbit-server.ts",
     "orbit:start": "node dist/orbit-server.js",
-    "orbit:build": "tsc && node dist/orbit-server.js"
+    "orbit:build": "tsc && node dist/orbit-server.js",
+    "cron": "tsx src/cron/burn-scheduler.ts"
   },
   "keywords": [
     "p2p",

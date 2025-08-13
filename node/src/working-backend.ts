@@ -96,6 +96,9 @@ export class WorkingBackend {
   }
 
   private setupRoutes() {
+    // Import Stripe webhook routes
+    const stripeWebhookRoutes = require('./routes/stripe-webhook').default;
+    
     // Health check
     this.app.get('/health', (req: express.Request, res: express.Response) => {
       res.json({
@@ -295,6 +298,9 @@ export class WorkingBackend {
       }
     });
 
+    // Stripe webhook endpoint
+    this.app.use('/api/stripe', stripeWebhookRoutes);
+    
     // WebSocket endpoint for real-time updates
     this.app.get('/ws', (req: express.Request, res: express.Response) => {
       res.json({

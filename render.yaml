@@ -1,16 +1,78 @@
 services:
   - type: web
+    name: onusone-p2p-frontend
+    env: node
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_BACKEND_URL
+        value: https://onusone-p2p-backend.onrender.com
+      - key: NEXT_PUBLIC_SOLANA_RPC_URL
+        value: https://api.devnet.solana.com
+      - key: NEXT_PUBLIC_SOLANA_NETWORK
+        value: devnet
+      - key: NEXT_PUBLIC_P2P_ENABLED
+        value: true
+      - key: NEXT_PUBLIC_STAKING_ENABLED
+        value: true
+      - key: NEXT_PUBLIC_REPLIES_ENABLED
+        value: true
+      - key: NEXT_PUBLIC_REPUTATION_ENABLED
+        value: true
+    healthCheckPath: /
+    autoDeploy: true
+    branch: main
+
+  - type: web
     name: onusone-p2p-backend
     env: node
-    plan: free
     buildCommand: cd node && npm install && npm run build
     startCommand: cd node && npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 10000
+        value: 8888
+      - key: SOLANA_RPC_URL
+        value: https://api.devnet.solana.com
+      - key: SOLANA_NETWORK
+        value: devnet
       - key: SUPABASE_URL
         value: https://vzkdahthvksbcaqymuyz.supabase.co
-    healthCheckPath: /health
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6a2RhaHRodmtzYmNhaXltdXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNTk0NjksImV4cCI6MjA3MDUzNTQ2OX0.n8uTn2WWbtlvO08mNYcGQs7gcAWXRnEKVpLBaILxl0Y
+      - key: IPFS_INFURA_PROJECT_ID
+        value: your_infura_project_id_here
+      - key: IPFS_INFURA_PROJECT_SECRET
+        value: your_infura_project_secret_here
+      - key: CRON_SECRET
+        value: your_cron_secret_here
+    healthCheckPath: /api/health
     autoDeploy: true
+    branch: main
+
+  - type: cron
+    name: onusone-p2p-cron
+    env: node
+    schedule: "0 * * * *"
+    buildCommand: cd node && npm install
+    startCommand: cd node && npm run cron
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        value: https://vzkdahthvksbcaqymuyz.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6a2RhaHRodmtzYmNhaXltdXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNTk0NjksImV4cCI6MjA3MDUzNTQ2OX0.n8uTn2WWbtlvO08mNYcGQs7gcAWXRnEKVpLBaILxl0Y
+      - key: CRON_SECRET
+        value: your_cron_secret_here
+    autoDeploy: true
+    branch: main
+
+databases:
+  - name: onusone-p2p-db
+    databaseName: onusone
+    user: onusone_user
+    plan: free
