@@ -99,6 +99,9 @@ export class WorkingBackend {
     // Import all route modules
     this.importRoutes();
     
+    // Add monitoring middleware
+    this.setupMonitoring();
+    
     // Health check
     this.app.get('/health', (req: express.Request, res: express.Response) => {
       res.json({
@@ -544,8 +547,27 @@ export class WorkingBackend {
       this.app.use('/api/upload', fileUploadRoutes.default);
       console.log('✅ File upload routes loaded');
 
+      // Import monitoring routes
+      const monitoringRoutes = await import('./routes/monitoring');
+      this.app.use('/api/monitoring', monitoringRoutes.default);
+      console.log('✅ Monitoring routes loaded');
+
     } catch (error) {
       console.warn('⚠️  Some routes failed to load:', error);
+    }
+  }
+
+  private setupMonitoring() {
+    try {
+      // Import monitoring middleware
+      const { monitoring } = require('./utils/monitoring');
+      
+      // Add monitoring middleware to all routes
+      this.app.use(monitoring.trackAPIPerformance());
+      
+      console.log('✅ Monitoring middleware enabled');
+    } catch (error) {
+      console.warn('⚠️  Monitoring middleware failed to load:', error);
     }
   }
 }
