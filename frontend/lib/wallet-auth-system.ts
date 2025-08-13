@@ -99,7 +99,9 @@ export class WalletAuthSystem {
    */
   static saveProfile(profile: WalletProfile): void {
     try {
-      localStorage.setItem(this.PROFILE_KEY, JSON.stringify(profile));
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(this.PROFILE_KEY, JSON.stringify(profile));
+      }
     } catch (error) {
       console.error('Error saving wallet profile:', error);
     }
@@ -110,6 +112,9 @@ export class WalletAuthSystem {
    */
   static getCurrentProfile(): WalletProfile | null {
     try {
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return null; // Server-side, return null
+      }
       const stored = localStorage.getItem(this.PROFILE_KEY);
       return stored ? JSON.parse(stored) : null;
     } catch (error) {
@@ -131,8 +136,10 @@ export class WalletAuthSystem {
     };
 
     try {
-      localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
-      console.log(`✅ Wallet session created for ${this.truncateWallet(walletAddress)}`);
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+        console.log(`✅ Wallet session created for ${this.truncateWallet(walletAddress)}`);
+      }
     } catch (error) {
       console.error('Error saving wallet session:', error);
     }
@@ -145,6 +152,9 @@ export class WalletAuthSystem {
    */
   static getCurrentSession(): WalletSession | null {
     try {
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return null; // Server-side, return null
+      }
       const stored = localStorage.getItem(this.SESSION_KEY);
       return stored ? JSON.parse(stored) : null;
     } catch (error) {
@@ -158,7 +168,7 @@ export class WalletAuthSystem {
    */
   static updateActivity(): void {
     const session = this.getCurrentSession();
-    if (session) {
+    if (session && typeof window !== 'undefined' && window.localStorage) {
       session.lastActivity = Date.now();
       localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
       
@@ -238,8 +248,16 @@ export class WalletAuthSystem {
    * Check if wallet is authenticated
    */
   static isAuthenticated(): boolean {
-    const session = this.getCurrentSession();
-    return session?.isConnected === true;
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return false; // Server-side, not authenticated
+      }
+      const session = this.getCurrentSession();
+      return session !== null && session.isConnected;
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      return false;
+    }
   }
 
   /**
@@ -338,11 +356,13 @@ export class WalletAuthSystem {
   }
 }
 
-// Auto-update activity every 30 seconds if session exists
-setInterval(() => {
-  if (WalletAuthSystem.isAuthenticated()) {
-    WalletAuthSystem.updateActivity();
-  }
-}, 30000);
+// Auto-update activity every 30 seconds if session exists (ONLY in browser)
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    if (WalletAuthSystem.isAuthenticated()) {
+      WalletAuthSystem.updateActivity();
+    }
+  }, 30000);
+}
 
 export default WalletAuthSystem;

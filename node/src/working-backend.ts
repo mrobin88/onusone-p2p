@@ -7,6 +7,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
 
 dotenv.config();
 
@@ -55,9 +57,16 @@ export class WorkingBackend {
   private server: any;
   private supabase: any;
   private isRunning: boolean = false;
+  private solanaConnection: Connection;
 
   constructor() {
     this.app = express();
+    
+    // Initialize Solana connection
+    this.solanaConnection = new Connection(
+      process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+      'confirmed'
+    );
     
     // Initialize Supabase (or use local SQLite as fallback)
     this.initializeDatabase();
@@ -310,6 +319,67 @@ export class WorkingBackend {
         ]
       });
     });
+  }
+
+  /**
+   * 🚀 NEW: Check user's ONU token balance
+   */
+  private async getUserONUBalance(walletAddress: string): Promise<number> {
+    try {
+      if (!process.env.ONU_TOKEN_MINT) {
+        console.warn('⚠️  ONU_TOKEN_MINT not configured, returning 0 balance');
+        return 0;
+      }
+
+      const mintPublicKey = new PublicKey(process.env.ONU_TOKEN_MINT);
+      const userPublicKey = new PublicKey(walletAddress);
+      
+      // Get the associated token account
+      const tokenAccount = await getAssociatedTokenAddress(
+        mintPublicKey,
+        userPublicKey
+      );
+
+      try {
+        // Get the token account info
+        const account = await getAccount(this.solanaConnection, tokenAccount);
+        const balance = Number(account.amount) / Math.pow(10, 9); // Assuming 9 decimals
+        return balance;
+      } catch (error) {
+        // Token account doesn't exist, balance is 0
+        return 0;
+      }
+    } catch (error) {
+      console.error('Failed to get ONU balance:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * 🚀 NEW: Check if user has sufficient ONU balance
+   */
+  private async hasSufficientBalance(walletAddress: string, requiredAmount: number): Promise<boolean> {
+    const balance = await this.getUserONUBalance(walletAddress);
+    return balance >= requiredAmount;
+  }
+
+  /**
+   * 🚀 NEW: Deduct ONU tokens from user (simulated - you'll need to implement actual transfer)
+   */
+  private async deductONUTokens(walletAddress: string, amount: number): Promise<boolean> {
+    try {
+      // For now, just log the deduction
+      // In production, you'd implement actual token transfer
+      console.log(`💰 Deducting ${amount} ONU from ${walletAddress}`);
+      
+      // TODO: Implement actual Solana token transfer
+      // This would involve creating and sending a transaction
+      
+      return true; // Simulated success
+    } catch (error) {
+      console.error('Failed to deduct ONU tokens:', error);
+      return false;
+    }
   }
 
   async start(port: number = 8888) {
