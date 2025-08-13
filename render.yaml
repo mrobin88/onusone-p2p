@@ -28,6 +28,9 @@ services:
   - type: web
     name: onusone-p2p-backend
     env: node
+    envVars:
+      - key: NODE_VERSION
+        value: 20
     buildCommand: cd node && npm install && npm run build
     startCommand: cd node && npm start
     envVars:
