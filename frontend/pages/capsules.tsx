@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useWallet } from '../hooks/useWallet';
+import { useWalletAuth } from '../components/WalletAuth';
 import { formatDistanceToNow } from 'date-fns';
 
 interface TimeCapsule {
@@ -14,7 +14,7 @@ interface TimeCapsule {
 }
 
 const CapsulesPage: React.FC = () => {
-  const { wallet, connect, disconnect, isConnected } = useWallet();
+  const { user, isAuthenticated, connectWallet, logout } = useWalletAuth();
   const [capsules, setCapsules] = useState<TimeCapsule[]>([]);
   const [newCapsule, setNewCapsule] = useState({
     content: '',
@@ -42,7 +42,7 @@ const CapsulesPage: React.FC = () => {
   };
 
   const createCapsule = async () => {
-    if (!isConnected || !wallet) {
+    if (!isAuthenticated || !user?.walletAddress) {
       alert('Please connect your wallet first');
       return;
     }
@@ -67,7 +67,7 @@ const CapsulesPage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: newCapsule.content,
-          authorwallet: wallet.publicKey?.toString(),
+          authorwallet: user.walletAddress,
           unlockAt: unlockTimestamp,
           cost: newCapsule.cost
         })
@@ -221,11 +221,11 @@ const CapsulesPage: React.FC = () => {
             {/* Create Tab */}
             {activeTab === 'create' && (
               <div className="space-y-6">
-                {!isConnected ? (
+                {!isAuthenticated ? (
                   <div className="text-center py-12">
                     <p className="text-gray-600 mb-4">Connect your wallet to create time capsules</p>
                     <button
-                      onClick={connect}
+                      onClick={connectWallet}
                       className="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Connect Wallet
