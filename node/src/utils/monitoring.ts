@@ -69,8 +69,8 @@ export class MonitoringSystem {
           metric.error = data?.message || 'Unknown error';
         }
 
-        this.addMetric(metric);
-        originalSend.call(this, data);
+        monitoring.addMetric(metric);
+        return originalSend.call(this, data);
       };
 
       next();

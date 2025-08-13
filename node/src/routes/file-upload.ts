@@ -16,20 +16,20 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
-  fileFilter: (req, file, cb) => {
-    // Allow common file types
-    const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'text/plain', 'text/markdown', 'application/pdf',
-      'video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav'
-    ];
-    
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('File type not allowed'), false);
+      fileFilter: (req: any, file: any, cb: any) => {
+      // Allow common file types
+      const allowedTypes = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'text/plain', 'text/markdown', 'application/pdf',
+        'video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav'
+      ];
+      
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('File type not allowed'), false);
+      }
     }
-  }
 });
 
 // IPFS configuration
@@ -45,7 +45,7 @@ const ipfs = create({
 });
 
 interface FileUploadRequest {
-  file: Express.Multer.File;
+  file: any;
   messageId?: string;
   userWallet: string;
   description?: string;
@@ -79,12 +79,7 @@ router.post('/file', upload.single('file'), async (req, res) => {
     
     // Upload to IPFS
     const ipfsResult = await ipfs.add(file.buffer, {
-      pin: true,
-      metadata: {
-        name: file.originalname,
-        contentType: file.mimetype,
-        size: file.size
-      }
+      pin: true
     });
     
     const ipfsHash = ipfsResult.cid.toString();

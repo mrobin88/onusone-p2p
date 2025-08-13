@@ -552,6 +552,11 @@ export class WorkingBackend {
       this.app.use('/api/monitoring', monitoringRoutes.default);
       console.log('✅ Monitoring routes loaded');
 
+      // Import decay routes
+      const decayRoutes = await import('./routes/decay');
+      this.app.use('/api/decay', decayRoutes.default);
+      console.log('✅ Decay routes loaded');
+
     } catch (error) {
       console.warn('⚠️  Some routes failed to load:', error);
     }

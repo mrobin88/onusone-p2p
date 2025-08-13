@@ -33,11 +33,11 @@ async function performTokenBurn(): Promise<BurnResult> {
   
   try {
     // Get messages that need burning (example logic - adjust based on your needs)
-    const { data: messages, error } = await supabase
-      .from('messages')
-      .select('*')
-      .lt('decay_score', 10) // Burn messages with very low decay scores
-      .eq('is_deleted', false);
+               const { data: messages, error } = await supabase
+             .from('messages')
+             .select('*')
+             .lt('decayscore', 10) // Burn messages with very low decay scores
+             .eq('isdeleted', false);
     
     if (error) throw error;
     
@@ -49,14 +49,14 @@ async function performTokenBurn(): Promise<BurnResult> {
       const burnAmount = message.stake_amount || 0;
       totalBurned += burnAmount;
       
-      // Mark message as burned
-      await supabase
-        .from('messages')
-        .update({ 
-          is_deleted: true,
-          metadata: { ...message.metadata, burned_at: new Date().toISOString() }
-        })
-        .eq('id', message.id);
+                   // Mark message as burned
+             await supabase
+               .from('messages')
+               .update({ 
+                 isdeleted: true,
+                 metadata: { ...message.metadata, burned_at: new Date().toISOString() }
+               })
+               .eq('id', message.id);
       
       burnEvents.push({
         messageId: message.id,
@@ -83,11 +83,11 @@ async function updateDecayScores(): Promise<DecayResult> {
   console.log('🔄 Updating decay scores...');
   
   try {
-    // Get all active messages
-    const { data: messages, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('is_deleted', false);
+               // Get all active messages
+           const { data: messages, error } = await supabase
+             .from('messages')
+             .select('*')
+             .eq('isdeleted', false);
     
     if (error) throw error;
     
@@ -100,14 +100,14 @@ async function updateDecayScores(): Promise<DecayResult> {
       
       const newDecayScore = Math.max(1, 100 - (ageHours * stakeMultiplier));
       
-      if (newDecayScore !== message.decay_score) {
-        await supabase
-          .from('messages')
-          .update({ decay_score: newDecayScore })
-          .eq('id', message.id);
-        
-        postsUpdated++;
-      }
+                   if (newDecayScore !== message.decayscore) {
+               await supabase
+                 .from('messages')
+                 .update({ decayscore: newDecayScore })
+                 .eq('id', message.id);
+               
+               postsUpdated++;
+             }
     }
     
     console.log(`🔄 Updated decay scores for ${postsUpdated} messages`);
