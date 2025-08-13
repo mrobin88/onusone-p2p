@@ -96,13 +96,8 @@ export class WorkingBackend {
   }
 
   private setupRoutes() {
-    // Import Stripe webhook routes
-    import('./routes/stripe-webhook').then(module => {
-      const stripeWebhookRoutes = module.default;
-      this.app.use('/api/stripe', stripeWebhookRoutes);
-    }).catch(err => {
-      console.warn('⚠️  Stripe webhook routes not loaded:', err.message);
-    });
+    // Import all route modules
+    this.importRoutes();
     
     // Health check
     this.app.get('/health', (req: express.Request, res: express.Response) => {
@@ -529,6 +524,28 @@ export class WorkingBackend {
       console.log('✅ WorkingBackend stopped successfully');
     } catch (error) {
       console.error('❌ Failed to stop WorkingBackend:', error);
+    }
+  }
+
+  private async importRoutes() {
+    try {
+      // Import Stripe webhook routes
+      const stripeWebhookRoutes = await import('./routes/stripe-webhook');
+      this.app.use('/api/stripe', stripeWebhookRoutes.default);
+      console.log('✅ Stripe webhook routes loaded');
+
+      // Import staking routes
+      const stakingRoutes = await import('./routes/staking');
+      this.app.use('/api/staking', stakingRoutes.default);
+      console.log('✅ Staking routes loaded');
+
+      // Import file upload routes
+      const fileUploadRoutes = await import('./routes/file-upload');
+      this.app.use('/api/upload', fileUploadRoutes.default);
+      console.log('✅ File upload routes loaded');
+
+    } catch (error) {
+      console.warn('⚠️  Some routes failed to load:', error);
     }
   }
 }
