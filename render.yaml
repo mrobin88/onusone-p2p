@@ -31,7 +31,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
-    buildCommand: cd node && npm install && npm run build
+    buildCommand: cd node && npm ci --only=production && npm run build
     startCommand: cd node && npm start
     envVars:
       - key: NODE_ENV
