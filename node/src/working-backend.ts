@@ -97,7 +97,12 @@ export class WorkingBackend {
 
   private setupRoutes() {
     // Import Stripe webhook routes
-    const stripeWebhookRoutes = require('./routes/stripe-webhook').default;
+    import('./routes/stripe-webhook').then(module => {
+      const stripeWebhookRoutes = module.default;
+      this.app.use('/api/stripe', stripeWebhookRoutes);
+    }).catch(err => {
+      console.warn('⚠️  Stripe webhook routes not loaded:', err.message);
+    });
     
     // Health check
     this.app.get('/health', (req: express.Request, res: express.Response) => {
@@ -298,9 +303,6 @@ export class WorkingBackend {
       }
     });
 
-    // Stripe webhook endpoint
-    this.app.use('/api/stripe', stripeWebhookRoutes);
-    
     // WebSocket endpoint for real-time updates
     this.app.get('/ws', (req: express.Request, res: express.Response) => {
       res.json({
