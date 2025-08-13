@@ -10,7 +10,9 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { realSolanaPayments, fiatOnRamp } from '../lib/real-solana-payments';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+// Temporarily disabled for local development
+// const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = null;
 
 interface PurchaseOption {
   usd: number;
@@ -335,8 +337,22 @@ function BuyONUForm() {
 
 export default function BuyONU() {
   return (
-    <Elements stripe={stripePromise}>
-      <BuyONUForm />
-    </Elements>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="text-4xl mb-4">🚧</div>
+          <h1 className="text-4xl font-bold text-white mb-4">Buy ONU Tokens</h1>
+          <div className="bg-yellow-500/20 backdrop-blur-sm rounded-xl p-8 border border-yellow-500/30">
+            <h3 className="text-2xl font-bold text-yellow-400 mb-2">Temporarily Disabled</h3>
+            <p className="text-yellow-300 mb-4">
+              Stripe integration is temporarily disabled for local development.
+            </p>
+            <p className="text-gray-300">
+              This feature will be re-enabled when launching to production.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
