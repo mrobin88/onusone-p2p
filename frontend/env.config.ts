@@ -6,8 +6,8 @@ export const ONU_CONFIG = {
   PROGRAM_ID: 'G3UL7e6JoWgNBxMuzCNRYesPSB35WR4zbBwaMUYNqNmM',
   
   // Solana Network
-  NETWORK: 'devnet',
-  RPC_URL: 'https://api.devnet.solana.com',
+  NETWORK: 'mainnet',
+  RPC_URL: 'https://solana-mainnet.g.alchemy.com/v2/LBo6Iza6EaQqGcoqRF83h',
   
   // Token Economics
   INITIAL_SUPPLY: 1_000_000_000, // 1 billion ONU tokens

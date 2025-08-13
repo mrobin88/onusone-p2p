@@ -15,6 +15,13 @@ interface SimpleUser {
   isGuest: boolean;
   totalPosts: number;
   joinedAt: string;
+  tokenBalance?: number;
+  totalStaked?: number;
+  totalEarned?: number;
+  totalBurned?: number;
+  reputation?: number;
+  networkTime?: string;
+  rank?: string;
 }
 
 interface SimpleAuthContextType {

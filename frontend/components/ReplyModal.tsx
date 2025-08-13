@@ -196,7 +196,7 @@ export default function ReplyModal({
                 >
                   {isSubmitting ? (
                     <>
-                      <LoadingSpinner size="sm" className="mr-2" />
+                      <LoadingSpinner size="sm" />
                       Posting...
                     </>
                   ) : (

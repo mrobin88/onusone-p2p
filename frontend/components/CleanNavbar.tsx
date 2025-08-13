@@ -55,7 +55,7 @@ export default function CleanNavbar() {
               {isAuthenticated && user && (
                 <div className="user-info">
                   <span className="text-secondary">👤 {user.username}</span>
-                  <span className="text-success ml-2">Rep: {user.reputation}</span>
+                  <span className="text-success ml-2">Posts: {user.totalPosts}</span>
                 </div>
               )}
               

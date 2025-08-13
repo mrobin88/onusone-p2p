@@ -23,7 +23,7 @@ interface UserStats {
 export default function Profile() {
   const router = useRouter();
   const { connected, publicKey } = useWallet();
-  const { user, profile, isAuthenticated, logout } = useWalletAuth();
+  const { user, isAuthenticated, logout } = useWalletAuth();
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,14 +37,16 @@ export default function Profile() {
     try {
       setLoading(true);
       // TODO: Load real stats from backend
-      setUserStats({
-        totalPosts: user.totalPosts || 0,
-        totalStaked: user.totalStaked || 0,
-        totalEarned: user.totalEarned || 0,
-        reputation: user.reputation || 0,
-        rank: user.rank || 'Newcomer',
-        joinedAt: user.joinedAt || 'Recently'
-      });
+      if (user) {
+        setUserStats({
+          totalPosts: user.totalPosts || 0,
+          totalStaked: user.totalStaked || 0,
+          totalEarned: user.totalEarned || 0,
+          reputation: user.reputation || 0,
+          rank: user.rank || 'Newcomer',
+          joinedAt: user.joinedAt || 'Recently'
+        });
+      }
     } catch (error) {
       console.error('Failed to load user stats:', error);
     } finally {

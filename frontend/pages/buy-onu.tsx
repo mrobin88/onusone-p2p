@@ -1,358 +1,190 @@
-/**
- * Buy ONU Tokens with Fiat
- * REAL Stripe integration - Credit card to ONU tokens
- */
-
-import { useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import React, { useState } from 'react';
+import Head from 'next/head';
+import Link from 'next/link';
+import { useWalletAuth } from '../components/WalletAuth';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { realSolanaPayments, fiatOnRamp } from '../lib/real-solana-payments';
+import Button from '../components/Button';
 
-// Temporarily disabled for local development
-// const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-const stripePromise = null;
+const BuyOnuPage: React.FC = () => {
+  const { user, isAuthenticated } = useWalletAuth();
+  const [selectedPackage, setSelectedPackage] = useState('basic');
+  const [loading, setLoading] = useState(false);
 
-interface PurchaseOption {
-  usd: number;
-  onu: number;
-  popular?: boolean;
-  bonus?: string;
-}
-
-const PURCHASE_OPTIONS: PurchaseOption[] = [
-  { usd: 25, onu: 50, bonus: 'Best for trying' },
-  { usd: 100, onu: 200, popular: true, bonus: '100% bonus ONU' },
-  { usd: 500, onu: 1100, bonus: '120% bonus ONU' },
-  { usd: 1000, onu: 2500, bonus: '150% bonus ONU' }
-];
-
-function BuyONUForm() {
-  const { connected, publicKey } = useWallet();
-  const [selectedOption, setSelectedOption] = useState<PurchaseOption>(PURCHASE_OPTIONS[1]);
-  const [customAmount, setCustomAmount] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<any>(null);
-  const [currentPrice, setCurrentPrice] = useState(0.50);
-  
-  const stripe = useStripe();
-  const elements = useElements();
-
-  // Load wallet balance and current price
-  useEffect(() => {
-    if (connected && publicKey) {
-      loadWalletData();
+  const packages = [
+    {
+      id: 'basic',
+      name: 'Starter Pack',
+      onuAmount: 50,
+      usdPrice: 25,
+      description: 'Perfect for getting started with time capsules'
+    },
+    {
+      id: 'premium',
+      name: 'Premium Pack',
+      onuAmount: 200,
+      usdPrice: 100,
+      description: 'Great for serious time capsule creators'
+    },
+    {
+      id: 'enterprise',
+      name: 'Enterprise Pack',
+      onuAmount: 500,
+      usdPrice: 250,
+      description: 'For power users and high-volume creators'
     }
-  }, [connected, publicKey]);
-
-  const loadWalletData = async () => {
-    if (!publicKey) return;
-    
-    try {
-      const balance = await realSolanaPayments.getWalletBalance(publicKey.toString());
-      const price = await realSolanaPayments.getONUPrice();
-      
-      setWalletBalance(balance);
-      setCurrentPrice(price);
-    } catch (error) {
-      console.error('Failed to load wallet data:', error);
-    }
-  };
-
-  const calculateONU = (usdAmount: number): number => {
-    const baseONU = usdAmount / currentPrice;
-    
-    // Bonus structure
-    if (usdAmount >= 1000) return baseONU * 2.5; // 150% bonus
-    if (usdAmount >= 500) return baseONU * 2.2;  // 120% bonus  
-    if (usdAmount >= 100) return baseONU * 2;    // 100% bonus
-    return baseONU;
-  };
+  ];
 
   const handlePurchase = async () => {
-    if (!stripe || !elements || !connected || !publicKey) return;
+    if (!isAuthenticated || !user?.walletAddress) {
+      alert('Please connect your wallet first');
+      return;
+    }
 
-    setIsProcessing(true);
-
+    setLoading(true);
     try {
-      const usdAmount = selectedOption ? selectedOption.usd : parseFloat(customAmount);
-      const onuAmount = calculateONU(usdAmount);
-
-      // Create payment intent
-      const { clientSecret } = await fiatOnRamp.createONUPurchase(
-        usdAmount,
-        publicKey.toString()
-      );
-
-      // Confirm payment with Stripe
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) throw new Error('Card element not found');
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-        }
+      const response = await fetch('/api/stripe/create-onu-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packageId: selectedPackage,
+          onuAmount: packages.find(p => p.id === selectedPackage)?.onuAmount,
+          walletAddress: user.walletAddress
+        })
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (response.ok) {
+        const data = await response.json();
+        // Redirect to Stripe checkout
+        window.location.href = data.checkoutUrl;
+      } else {
+        const error = await response.json();
+        alert(`Purchase failed: ${error.message}`);
       }
-
-      if (paymentIntent.status === 'succeeded') {
-        // Verify and deliver tokens
-        const response = await fetch('/api/stripe/verify-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentIntentId: paymentIntent.id })
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          alert(`Success! ${result.onuAmount} ONU tokens sent to your wallet.\nTransaction: ${result.signature}`);
-          await loadWalletData(); // Refresh balance
-        } else {
-          throw new Error('Token delivery failed');
-        }
-      }
-
     } catch (error) {
-      console.error('Purchase failed:', error);
-      alert(`Purchase failed: ${error}`);
+      alert('Failed to create purchase. Please try again.');
     } finally {
-      setIsProcessing(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-black text-white">
+      <Head>
+        <title>Buy ONU Tokens - OnusOne</title>
+        <meta name="description" content="Purchase ONU tokens for time capsules and network participation" />
+      </Head>
+
       {/* Header */}
-      <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-6">
-              <a href="/" className="text-xl font-bold text-blue-600">OnusOne P2P</a>
-              <a href="/buy-onu" className="text-gray-700 hover:text-blue-600 font-medium">💳 Buy ONU</a>
-              <a href="/become-node" className="text-gray-700 hover:text-blue-600">💰 Become Node</a>
-            </div>
-            <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700" />
+      <header className="bg-gray-900 border-b border-gray-700 p-4">
+        <div className="container mx-auto flex justify-between items-center">
+          <Link href="/" className="text-xl font-bold text-blue-400">
+            ← Back to Network
+          </Link>
+          <div className="flex items-center space-x-4">
+            {isAuthenticated ? (
+              <span className="text-gray-300">Welcome, {user?.username}</span>
+            ) : (
+              <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700" />
+            )}
           </div>
         </div>
-      </nav>
+      </header>
 
-      <div className="max-w-4xl mx-auto p-6">
-        {/* Hero */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">💳 Buy ONU Tokens</h1>
-          <p className="text-xl text-gray-600">
-            Get ONU tokens instantly with your credit card. Use them to post messages and earn as a node operator.
-          </p>
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg inline-block">
-            <div className="text-sm text-blue-800">
-              <strong>Current Price:</strong> ${currentPrice.toFixed(2)} per ONU
-            </div>
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold mb-4">Buy ONU Tokens</h1>
+            <p className="text-xl text-gray-300">
+              Purchase ONU tokens to create premium time capsules and participate in the network
+            </p>
           </div>
-        </div>
 
-        {!connected ? (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-4">🔐</div>
-            <p className="text-gray-600 mb-4">Connect your Solana wallet to buy ONU tokens</p>
-            <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700" />
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Left: Purchase Options */}
-            <div className="space-y-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">💰 Choose Amount</h2>
-                
-                <div className="space-y-3 mb-6">
-                  {PURCHASE_OPTIONS.map((option, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedOption(option)}
-                      className={`w-full p-4 border rounded-lg text-left transition-all ${
-                        selectedOption === option
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium">${option.usd} USD</div>
-                          <div className="text-sm text-gray-600">{option.onu} ONU tokens</div>
-                          {option.bonus && (
-                            <div className="text-xs text-green-600 font-medium">{option.bonus}</div>
-                          )}
-                        </div>
-                        {option.popular && (
-                          <div className="bg-blue-600 text-white text-xs px-2 py-1 rounded">Popular</div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Custom Amount */}
-                <div className="border-t pt-4">
-                  <label className="block text-sm font-medium mb-2">Custom Amount</label>
-                  <input
-                    type="number"
-                    placeholder="Enter USD amount (min $10)"
-                    value={customAmount}
-                    onChange={(e) => {
-                      setCustomAmount(e.target.value);
-                      if (e.target.value) {
-                        setSelectedOption({
-                          usd: parseFloat(e.target.value) || 0,
-                          onu: calculateONU(parseFloat(e.target.value) || 0)
-                        });
-                      }
-                    }}
-                    className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  {customAmount && (
-                    <div className="text-sm text-gray-600 mt-1">
-                      = {calculateONU(parseFloat(customAmount) || 0).toFixed(2)} ONU tokens
-                    </div>
-                  )}
+          {/* Token Packages */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            {packages.map((pkg) => (
+              <div
+                key={pkg.id}
+                className={`bg-gray-900 border-2 rounded-lg p-6 cursor-pointer transition-all ${
+                  selectedPackage === pkg.id
+                    ? 'border-blue-500 bg-gray-800'
+                    : 'border-gray-700 hover:border-gray-600'
+                }`}
+                onClick={() => setSelectedPackage(pkg.id)}
+              >
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold mb-2">{pkg.name}</h3>
+                  <div className="text-4xl font-bold text-blue-400 mb-2">
+                    {pkg.onuAmount} ONU
+                  </div>
+                  <div className="text-2xl font-bold text-green-400 mb-4">
+                    ${pkg.usdPrice}
+                  </div>
+                  <p className="text-gray-400 mb-4">{pkg.description}</p>
+                  <div className="text-sm text-gray-500">
+                    ${(pkg.usdPrice / pkg.onuAmount).toFixed(2)} per ONU
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
 
-              {/* Payment Form */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">💳 Payment Details</h3>
-                
-                <div className="mb-4">
-                  <CardElement
-                    options={{
-                      style: {
-                        base: {
-                          fontSize: '16px',
-                          color: '#424770',
-                          '::placeholder': {
-                            color: '#aab7c4',
-                          },
-                        },
-                      },
-                    }}
-                    className="p-3 border border-gray-300 rounded"
-                  />
+          {/* Purchase Section */}
+          <div className="bg-gray-900 rounded-lg p-8 text-center">
+            <h2 className="text-2xl font-bold mb-6">Ready to Purchase?</h2>
+            
+            {isAuthenticated ? (
+              <div className="space-y-4">
+                <div className="text-lg text-gray-300">
+                  Selected: <span className="text-blue-400 font-bold">
+                    {packages.find(p => p.id === selectedPackage)?.onuAmount} ONU
+                  </span> for{' '}
+                  <span className="text-green-400 font-bold">
+                    ${packages.find(p => p.id === selectedPackage)?.usdPrice}
+                  </span>
                 </div>
-
-                <button
+                
+                <Button
                   onClick={handlePurchase}
-                  disabled={isProcessing || !selectedOption?.usd}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded font-medium disabled:opacity-50"
+                  disabled={loading}
+                  className="text-lg px-8 py-4"
                 >
-                  {isProcessing ? (
-                    '⏳ Processing...'
-                  ) : (
-                    `🚀 Buy ${selectedOption?.onu.toFixed(2) || 0} ONU for $${selectedOption?.usd || 0}`
-                  )}
-                </button>
-
-                <div className="text-xs text-gray-500 mt-3 text-center">
-                  Secure payment processed by Stripe. ONU tokens will be delivered to your Solana wallet.
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Wallet Info */}
-            <div className="space-y-6">
-              {walletBalance && (
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold mb-4">💼 Your Wallet</h3>
-                  
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span>SOL Balance:</span>
-                      <span className="font-medium">{walletBalance.sol.toFixed(4)} SOL</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>ONU Balance:</span>
-                      <span className="font-medium">{walletBalance.onu.toFixed(2)} ONU</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>USD Value:</span>
-                      <span className="font-medium text-green-600">
-                        ${(walletBalance.onu * currentPrice).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 p-3 bg-gray-50 rounded text-sm">
-                    <div className="font-medium">Wallet Address:</div>
-                    <div className="text-gray-600 break-all">
-                      {publicKey?.toString()}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">💡 What You Can Do</h3>
+                  {loading ? 'Processing...' : 'Purchase ONU Tokens'}
+                </Button>
                 
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-3">
-                    <span className="text-blue-500">📝</span>
-                    <div>
-                      <div className="font-medium">Post Messages</div>
-                      <div className="text-gray-600">~10 ONU per message</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="text-green-500">🚀</span>
-                    <div>
-                      <div className="font-medium">Boost Content</div>
-                      <div className="text-gray-600">Stake ONU to increase visibility</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="text-purple-500">💰</span>
-                    <div>
-                      <div className="font-medium">Run Edge Node</div>
-                      <div className="text-gray-600">Earn $4-8/day hosting messages</div>
-                    </div>
-                  </div>
-                </div>
+                <p className="text-sm text-gray-500">
+                  You'll be redirected to Stripe to complete your payment
+                </p>
               </div>
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="text-sm">
-                  <div className="font-medium text-yellow-800 mb-1">💡 Pro Tip</div>
-                  <div className="text-yellow-700">
-                    Buy $100+ to get bonus ONU tokens for posting messages!
-                  </div>
-                </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-gray-400">Connect your wallet to purchase ONU tokens</p>
+                <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700 !text-lg !px-8 !py-4" />
               </div>
-            </div>
+            )}
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
-export default function BuyONU() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="text-4xl mb-4">🚧</div>
-          <h1 className="text-4xl font-bold text-white mb-4">Buy ONU Tokens</h1>
-          <div className="bg-yellow-500/20 backdrop-blur-sm rounded-xl p-8 border border-yellow-500/30">
-            <h3 className="text-2xl font-bold text-yellow-400 mb-2">Temporarily Disabled</h3>
-            <p className="text-yellow-300 mb-4">
-              Stripe integration is temporarily disabled for local development.
-            </p>
-            <p className="text-gray-300">
-              This feature will be re-enabled when launching to production.
-            </p>
+          {/* Info Section */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-gray-900 p-6 rounded-lg">
+              <h3 className="text-xl font-bold mb-4 text-blue-400">What are ONU Tokens?</h3>
+              <p className="text-gray-300">
+                ONU tokens are the native currency of the OnusOne network. Use them to create 
+                premium time capsules, stake on content, and participate in network governance.
+              </p>
+            </div>
+            
+            <div className="bg-gray-900 p-6 rounded-lg">
+              <h3 className="text-xl font-bold mb-4 text-green-400">How to Use ONU</h3>
+              <p className="text-gray-300">
+                After purchase, ONU tokens will be sent to your connected wallet. You can then 
+                use them to create time capsules with custom unlock dates and premium features.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
-}
+};
+
+export default BuyOnuPage;

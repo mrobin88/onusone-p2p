@@ -8,6 +8,15 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import '../styles/globals.css';
 import '../styles/clean-modern.css';
 
+// Disable React DevTools in production
+if (process.env.NODE_ENV === 'production') {
+  // @ts-ignore
+  if (typeof window !== 'undefined' && window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+    // @ts-ignore
+    window.__REACT_DEVTOOLS_GLOBAL_HOOK__.inject = function () {}
+  }
+}
+
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <ErrorBoundary>

@@ -102,10 +102,10 @@ export default function GamingChat({
             <div className="composer-header">
               <div className="user-info">
                 <div className="user-avatar">
-                  {user?.displayName?.slice(0, 2).toUpperCase() || '??'}
+                  {user?.username?.slice(0, 2).toUpperCase() || '??'}
                 </div>
                 <div className="user-details">
-                  <span className="username">{user?.displayName || 'Anonymous'}</span>
+                  <span className="username">{user?.username || 'Anonymous'}</span>
                   <span className={`reputation ${getReputationColor(user?.reputation || 0)}`}>
                     {getReputationIcon(user?.reputation || 0)} {user?.reputation || 0} rep
                   </span>

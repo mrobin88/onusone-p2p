@@ -24,10 +24,10 @@ export default function CompactWalletWidget() {
       <div className="wallet-info">
         <div className="wallet-summary" onClick={() => setIsExpanded(!isExpanded)}>
           <div className="wallet-avatar">
-            {user.displayName?.slice(0, 2).toUpperCase() || '??'}
+            {user.username?.slice(0, 2).toUpperCase() || '??'}
           </div>
           <div className="wallet-details">
-            <span className="wallet-name">{user.displayName || 'Anonymous'}</span>
+            <span className="wallet-name">{user.username || 'Anonymous'}</span>
             <span className="wallet-balance">
               {user.tokenBalance ? `${user.tokenBalance.toFixed(1)}K ONU` : '0 ONU'}
             </span>

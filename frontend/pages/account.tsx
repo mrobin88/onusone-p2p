@@ -77,7 +77,7 @@ const AccountPage = () => {
                 <div className="space-y-4">
                   <div>
                     <p className="text-gray-400 text-sm">Name</p>
-                    <p className="text-lg font-medium">{user?.displayName || 'Anonymous'}</p>
+                    <p className="text-lg font-medium">{user?.username || 'Anonymous'}</p>
                   </div>
 
                   <div>

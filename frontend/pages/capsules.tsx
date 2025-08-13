@@ -27,6 +27,12 @@ const CapsulesPage: React.FC = () => {
 
   useEffect(() => {
     fetchCapsules();
+    
+    // Only set up polling in development
+    if (process.env.NODE_ENV === 'development') {
+      const interval = setInterval(fetchCapsules, 30000); // 30 seconds
+      return () => clearInterval(interval);
+    }
   }, []);
 
   const fetchCapsules = async () => {
