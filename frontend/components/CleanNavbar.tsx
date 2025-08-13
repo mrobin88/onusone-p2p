@@ -12,12 +12,10 @@ export default function CleanNavbar() {
 
   const navItems = [
     { href: '/', label: 'Home' },
-    { href: '/boards', label: 'Boards' },
-    { href: '/p2p-demo', label: 'P2P Demo' },
+    { href: '/capsules', label: 'Time Capsules' },
     { href: '/buy-onu', label: 'Buy ONU' },
     { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/profile', label: 'Profile' },
-    { href: '/become-node', label: 'Become Node' },
   ];
 
   const isActive = (href: string) => router.pathname === href;

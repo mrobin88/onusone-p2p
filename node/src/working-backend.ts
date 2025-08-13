@@ -319,6 +319,117 @@ export class WorkingBackend {
         ]
       });
     });
+
+    // Time Capsule Endpoints
+    // Create a time capsule (stores as a message with metadata)
+    this.app.post('/api/time-capsules', async (req: express.Request, res: express.Response) => {
+      try {
+        const { content, authorwallet, unlockAt, cost = 0 } = req.body || {};
+        if (!content) {
+          return res.status(400).json({ error: 'Content is required' });
+        }
+        if (!authorwallet || authorwallet === 'anonymous') {
+          return res.status(400).json({ error: 'Valid author wallet is required' });
+        }
+
+        // Check ONU balance if cost > 0
+        if (cost > 0) {
+          const hasBalance = await this.hasSufficientBalance(authorwallet, cost);
+          if (!hasBalance) {
+            const current = await this.getUserONUBalance(authorwallet);
+            return res.status(400).json({ error: 'Insufficient ONU balance', required: cost, current });
+          }
+          // Note: actual deduction/transfer is not implemented here
+        }
+
+        const unlockTimestamp = typeof unlockAt === 'number'
+          ? unlockAt
+          : (unlockAt ? Date.parse(unlockAt) : 0);
+
+        const message: Message = {
+          id: uuidv4(),
+          content,
+          author: authorwallet,
+          boardslug: 'capsules',
+          authorwallet,
+          timestamp: Date.now(),
+          stakeamount: 0,
+          totalstakes: 0,
+          decayscore: 100,
+          rewardpool: 0,
+          likes: 0,
+          dislikes: 0,
+          ispinned: false,
+          isdeleted: false,
+          metadata: {
+            isTimeCapsule: true,
+            unlockAt: unlockTimestamp,
+            cost: cost
+          }
+        };
+
+        if (this.supabase) {
+          const { data, error } = await this.supabase
+            .from('messages')
+            .insert([message])
+            .select();
+          if (error) throw error;
+          return res.json({ success: true, timeCapsule: data[0] });
+        } else {
+          return res.json({ success: true, timeCapsule: message });
+        }
+      } catch (error) {
+        console.error('Failed to create time capsule:', error);
+        res.status(500).json({ error: 'Failed to create time capsule' });
+      }
+    });
+
+    // Get unlocked time capsules
+    this.app.get('/api/time-capsules/unlocked', async (req: express.Request, res: express.Response) => {
+      try {
+        if (this.supabase) {
+          const { data, error } = await this.supabase
+            .from('messages')
+            .select('*')
+            .contains('metadata', { isTimeCapsule: true })
+            .order('timestamp', { ascending: false })
+            .limit(100);
+          if (error) throw error;
+          const now = Date.now();
+          const unlocked = (data || []).filter((m: any) => (m.metadata?.unlockAt ?? 0) <= now);
+          return res.json({ timeCapsules: unlocked });
+        } else {
+          return res.json({ timeCapsules: [] });
+        }
+      } catch (error) {
+        console.error('Failed to get unlocked time capsules:', error);
+        res.status(500).json({ error: 'Failed to get unlocked time capsules' });
+      }
+    });
+
+    // Get user's time capsules
+    this.app.get('/api/time-capsules/user/:wallet', async (req: express.Request, res: express.Response) => {
+      try {
+        const { wallet } = req.params;
+        if (!wallet) return res.status(400).json({ error: 'Wallet required' });
+        if (this.supabase) {
+          const { data, error } = await this.supabase
+            .from('messages')
+            .select('*')
+            .eq('authorwallet', wallet)
+            .contains('metadata', { isTimeCapsule: true })
+            .order('timestamp', { ascending: false })
+            .limit(100);
+          if (error) throw error;
+          return res.json({ timeCapsules: data || [] });
+        } else {
+          return res.json({ timeCapsules: [] });
+        }
+      } catch (error) {
+        console.error('Failed to get user time capsules:', error);
+        res.status(500).json({ error: 'Failed to get user time capsules' });
+      }
+    });
   }
 
   /**

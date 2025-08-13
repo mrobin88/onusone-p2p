@@ -27,8 +27,8 @@ export default function Home() {
             Stake tokens, earn rewards, and participate in the future of social trading.
           </p>
           <div className="flex justify-center gap-4">
-            <Link href="/boards" className="btn btn-primary text-lg px-8 py-4">
-              Start Messaging
+            <Link href="/capsules" className="btn btn-primary text-lg px-8 py-4">
+              Time Capsules
             </Link>
             <Link href="/buy-onu" className="btn btn-secondary text-lg px-8 py-4">
               Buy ONU Tokens
@@ -103,8 +103,8 @@ export default function Home() {
             Connect your wallet and start participating in the decentralized future.
           </p>
           <div className="flex justify-center gap-4">
-            <Link href="/boards" className="btn btn-primary text-lg px-8 py-4">
-              Explore Boards
+            <Link href="/capsules" className="btn btn-primary text-lg px-8 py-4">
+              Explore Capsules
             </Link>
             <Link href="/profile" className="btn btn-secondary text-lg px-8 py-4">
               View Profile

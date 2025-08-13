@@ -12,10 +12,8 @@ export default function ClientOnly({ children, fallback = null }: ClientOnlyProp
     setHasMounted(true);
   }, []);
 
-  // Always render the same structure to prevent hook order issues
-  if (!hasMounted) {
-    return <div style={{ visibility: 'hidden' }}>{children}</div>;
-  }
+  // Do not render children on the server to avoid hydration mismatches
+  if (!hasMounted) return <>{fallback}</>;
 
   return <>{children}</>;
 }
