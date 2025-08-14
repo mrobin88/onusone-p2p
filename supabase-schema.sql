@@ -352,7 +352,8 @@ INSERT INTO boards (slug, name, description) VALUES
     ('gaming', 'Gaming', 'Gaming and entertainment'),
     ('art', 'Art & Design', 'Creative arts and design'),
     ('music', 'Music', 'Music and audio discussions'),
-    ('trading', 'Trading', 'Trading and finance')
+    ('trading', 'Trading', 'Trading and finance'),
+    ('time-capsules', 'Time Capsules', 'Send messages to the future')
 ON CONFLICT (slug) DO NOTHING;
 
 -- =====================================================
