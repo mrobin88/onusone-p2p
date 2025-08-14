@@ -10,7 +10,7 @@
     "start": "next start",
     "start:production": "NODE_ENV=production next start",
     "lint": "next lint",
-    "export": "next export",
+    "export": "echo 'Static export disabled - using Node.js deployment'",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
