@@ -22,8 +22,10 @@ export default function Home() {
   const router = useRouter();
   const { user, isAuthenticated, logout, isConnecting } = useWalletAuth();
   
-  // Debug info - remove this later
-  console.log('🔑 Wallet Auth Debug:', { isAuthenticated, user, isConnecting });
+  // Debug info - only in development
+  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG_MODE === 'true') {
+    console.log('🔑 Wallet Auth Debug:', { isAuthenticated, user, isConnecting });
+  }
   const [networkStats, setNetworkStats] = useState({
     connectedPeers: 0,
     userReputation: 100,

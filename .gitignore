@@ -1,5 +1,17 @@
 # Dependencies
 node_modules/
+
+# WALLET SECURITY - NEVER COMMIT THESE!
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!next.config.js
+!tailwind.config.js
+!postcss.config.js
+treasury-wallet.json
+NEW-treasury-wallet.json
+my-solana-keypair.json
 */node_modules/
 npm-debug.log*
 yarn-debug.log*

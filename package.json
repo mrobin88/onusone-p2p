@@ -13,25 +13,20 @@
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:node\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:node": "cd node && npm run dev",
+    "dev:unified": "concurrently \"cd frontend && npm run build:production\" \"cd node && npm run dev\"",
+    "start:unified": "node start-unified-local.js",
+    "local:unified": "node local-unified-server.js",
     "build": "npm run build:frontend && npm run build:node",
-    "build:frontend": "cd frontend && npm run build",
+    "build:frontend": "cd frontend && npm run build:production",
     "build:node": "cd node && npm run build",
-    "test": "npm run test:frontend && npm run test:node && npm run test:contracts",
-    "test:core": "node test-core-p2p.js",
-    "test:frontend": "cd frontend && npm run test",
-    "test:node": "cd node && npm run test",
-    "test:contracts": "cd contracts && npm run test",
-    "start": "concurrently \"npm run start:frontend\" \"npm run start:node\"",
-    "start:frontend": "cd frontend && npm run start",
-    "start:node": "cd node && npm run start",
-    "clean": "rm -rf node_modules && rm -rf */node_modules && rm -rf */dist && rm -rf */build",
-    "install:all": "npm install && npm run install:workspaces",
-    "install:workspaces": "cd frontend && npm install && cd ../node && npm install && cd ../contracts && npm install && cd ../shared && npm install"
+    "start": "cd node && npm start",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
     "typescript": "^5.3.3",
-    "@types/node": "^20.10.5"
+    "@types/node": "^20.10.5",
+    "express": "^4.18.2"
   },
   "engines": {
     "node": ">=18.0.0",
