@@ -73,7 +73,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-black text-white">
       <Head>
-        <title>OnusOne - Take Back Control</title>
+        <title>OnusOne - Time Capsules</title>
         <meta name="description" content="Decentralized social platform - take back what's yours" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
