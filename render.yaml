@@ -1,14 +1,21 @@
 services:
   - type: web
-    name: onusone-p2p-frontend
+    name: onusone-p2p-unified
     env: node
-    buildCommand: cd frontend && npm install && npm run build:production
-    startCommand: cd frontend && npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+    buildCommand: |
+      cd frontend && npm install && npm run build:production &&
+      cd ../node && npm ci --only=production && npm run build
+    startCommand: cd node && npm start
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 8888
       - key: NEXT_PUBLIC_BACKEND_URL
-        value: https://onusone-p2p-backend.onrender.com
+        value: https://onusone-p2p-unified.onrender.com
       - key: NEXT_PUBLIC_SOLANA_RPC_URL
         value: https://solana-mainnet.g.alchemy.com/v2/LBo6Iza6EaQqGcoqRF83h
       - key: NEXT_PUBLIC_SOLANA_NETWORK
@@ -21,23 +28,6 @@ services:
         value: true
       - key: NEXT_PUBLIC_REPUTATION_ENABLED
         value: true
-    healthCheckPath: /
-    autoDeploy: true
-    branch: main
-
-  - type: web
-    name: onusone-p2p-backend
-    env: node
-    envVars:
-      - key: NODE_VERSION
-        value: 20
-    buildCommand: cd node && npm ci --only=production && npm run build
-    startCommand: cd node && npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 8888
       - key: SOLANA_RPC_URL
         value: https://solana-mainnet.g.alchemy.com/v2/LBo6Iza6EaQqGcoqRF83h
       - key: SOLANA_NETWORK
