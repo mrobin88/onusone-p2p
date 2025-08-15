@@ -10,9 +10,11 @@ services:
       - key: PORT
         value: 8888
       - key: SOLANA_RPC_URL
-        value: https://solana-mainnet.g.alchemy.com/v2/LBo6Iza6EaQqGcoqRF83h
+        value: https://api.devnet.solana.com
       - key: SOLANA_NETWORK
-        value: mainnet
+        value: devnet
+      - key: ONU_TOKEN_MINT
+        value: 9gnaeTBFEvf2gmDecABRqJzfvMcTGVaTdArmfvs1owDT
       - key: SUPABASE_URL
         value: https://vzkdahthvksbcaqymuyz.supabase.co
       - key: SUPABASE_ANON_KEY
