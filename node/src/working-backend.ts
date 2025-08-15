@@ -106,21 +106,51 @@ export class WorkingBackend {
     
 
     
-    // Root route - redirect to frontend or show API info
+    // Root route - serve the time capsule landing page
     this.app.get('/', (req: express.Request, res: express.Response) => {
-      res.json({
-        message: 'OnusOne Time Capsule API',
-        version: '1.0.0',
-        status: 'running',
-        endpoints: {
-          health: '/health',
-          api: '/api',
-          timeCapsules: '/api/time-capsules',
-          stripe: '/api/stripe',
-          upload: '/api/upload'
-        },
-        docs: 'This is the backend API for the OnusOne Time Capsule app'
-      });
+      // Try to serve the frontend landing page first
+      const possiblePaths = [
+        path.join(__dirname, '../../frontend/out/index.html'),
+        path.join(__dirname, '../../frontend/.next/server/pages/index.html'),
+        path.join(__dirname, '../../frontend/.next/static/index.html'),
+        path.join(__dirname, '../../frontend/dist/index.html')
+      ];
+      
+      let frontendFound = false;
+      for (const frontendPath of possiblePaths) {
+        if (require('fs').existsSync(frontendPath)) {
+          console.log(`🎯 Serving landing page from: ${frontendPath}`);
+          res.sendFile(frontendPath);
+          frontendFound = true;
+          break;
+        }
+      }
+      
+      if (!frontendFound) {
+        // Fallback to a simple HTML landing page if frontend not built
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>OnusOne Time Capsules</title>
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+              .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 100px 20px; border-radius: 20px; margin: 20px; }
+              .cta { background: #4CAF50; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; margin: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="hero">
+              <h1>🚀 OnusOne Time Capsules</h1>
+              <p>Send messages to the future with ONU tokens</p>
+              <a href="/api/time-capsules" class="cta">Create Time Capsule</a>
+              <a href="/buy-onu" class="cta">Buy ONU Tokens</a>
+            </div>
+            <p>Your time capsule app is building... Check back soon!</p>
+          </body>
+          </html>
+        `);
+      }
     });
 
     // Health check
