@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: onusone-p2p-backend
+    name: onusone-p2p
     env: node
     envVars:
       - key: NODE_VERSION
@@ -35,27 +35,12 @@ services:
         value: SuUxaKEsGZu5FWDeY49PPRzis888N9mAnS93Zkxppes
       - key: TREASURY_PRIVATE_KEY
         value: 5t7FUeve2Vq/07edPc1Ebbz0fXhZfBNMb+rm/dcfi6wGotyil0mYcpqYJziwLSOCIrrBo9hwDTmraCJoCtJa2A==
-    buildCommand: |
-      cd node && npm ci --only=production && npm run build
-    startCommand: cd node && npm start
-    healthCheckPath: /health
-    autoDeploy: true
-    branch: main
-
-  - type: web
-    name: onusone-p2p-frontend
-    env: node
-    envVars:
-      - key: NODE_VERSION
-        value: 20
-      - key: NODE_ENV
-        value: production
       - key: NEXT_PUBLIC_BACKEND_URL
-        value: https://onusone-p2p-backend.onrender.com
+        value: https://onusone-p2p.onrender.com
       - key: NEXT_PUBLIC_SOLANA_RPC_URL
-        value: https://solana-mainnet.g.alchemy.com/v2/LBo6Iza6EaQqGcoqRF83h
+        value: https://api.devnet.solana.com
       - key: NEXT_PUBLIC_SOLANA_NETWORK
-        value: mainnet
+        value: devnet
       - key: NEXT_PUBLIC_P2P_ENABLED
         value: true
       - key: NEXT_PUBLIC_STAKING_ENABLED
@@ -65,9 +50,10 @@ services:
       - key: NEXT_PUBLIC_REPUTATION_ENABLED
         value: true
     buildCommand: |
-      cd frontend && npm ci && npm run build
-    startCommand: cd frontend && PORT=$PORT npm start
-    healthCheckPath: /
+      cd frontend && npm ci && npm run build:production &&
+      cd ../node && npm ci --only=production && npm run build
+    startCommand: cd node && npm start
+    healthCheckPath: /health
     autoDeploy: true
     branch: main
 
