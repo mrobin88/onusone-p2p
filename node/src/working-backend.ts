@@ -349,19 +349,45 @@ export class WorkingBackend {
 
     // Catch-all route to serve frontend
     this.app.get('*', (req: express.Request, res: express.Response) => {
-      // Try to serve from frontend build directory
-      const frontendPath = path.join(__dirname, '../../frontend/out/index.html');
-      const nextPath = path.join(__dirname, '../../frontend/.next/server/pages/index.html');
+      // Skip API routes
+      if (req.path.startsWith('/api/') || req.path === '/health') {
+        return res.status(404).json({ error: 'API endpoint not found' });
+      }
       
-      if (require('fs').existsSync(frontendPath)) {
-        res.sendFile(frontendPath);
-      } else if (require('fs').existsSync(nextPath)) {
-        res.sendFile(nextPath);
-      } else {
+      // Try to serve from frontend build directories
+      const possiblePaths = [
+        path.join(__dirname, '../../frontend/out/index.html'),
+        path.join(__dirname, '../../frontend/.next/server/pages/index.html'),
+        path.join(__dirname, '../../frontend/.next/static/index.html'),
+        path.join(__dirname, '../../frontend/dist/index.html')
+      ];
+      
+      let frontendFound = false;
+      for (const frontendPath of possiblePaths) {
+        if (require('fs').existsSync(frontendPath)) {
+          console.log(`🎯 Serving frontend from: ${frontendPath}`);
+          res.sendFile(frontendPath);
+          frontendFound = true;
+          break;
+        }
+      }
+      
+      if (!frontendFound) {
+        // Log what directories exist for debugging
+        const frontendDir = path.join(__dirname, '../../frontend');
+        const nodeDir = path.join(__dirname, '../');
+        console.log(`🔍 Frontend directory exists: ${require('fs').existsSync(frontendDir)}`);
+        console.log(`🔍 Node directory exists: ${require('fs').existsSync(nodeDir)}`);
+        
         // Fallback to API info if frontend not built
         res.json({
           message: 'OnusOne Time Capsule App',
-          status: 'Frontend not built yet - building...',
+          status: 'Frontend not found - checking build directories...',
+          debug: {
+            frontendDir: frontendDir,
+            nodeDir: nodeDir,
+            possiblePaths: possiblePaths
+          },
           endpoints: {
             health: '/health',
             api: '/api',
