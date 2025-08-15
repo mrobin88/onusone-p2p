@@ -5,11 +5,6 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
-    buildCommand: |
-      cd frontend && npm install && npm run build:production &&
-      cd ../node && npm ci --only=production && npm run build
-    startCommand: cd node && npm start
-    envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
@@ -41,7 +36,15 @@ services:
       - key: PINATA_SECRET_KEY
         value: your_pinata_secret_key_here
       - key: CRON_SECRET
-        value: your_cron_secret_here
+        value: 9997979a942df23e20615b18c40757eb5360dda27675280c5df3af6d313ea260
+      - key: TREASURY_ADDRESS
+        value: SuUxaKEsGZu5FWDeY49PPRzis888N9mAnS93Zkxppes
+      - key: TREASURY_PRIVATE_KEY
+        value: 5t7FUeve2Vq/07edPc1Ebbz0fXhZfBNMb+rm/dcfi6wGotyil0mYcpqYJziwLSOCIrrBo9hwDTmraCJoCtJa2A==
+    buildCommand: |
+      cd frontend && npm install && npm run build:production &&
+      cd ../node && npm ci --only=production && npm run build
+    startCommand: cd node && npm start
     healthCheckPath: /api/health
     autoDeploy: true
     branch: main
@@ -60,7 +63,7 @@ services:
       - key: SUPABASE_ANON_KEY
         value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6a2RhaHRodmtzYmNhaXltdXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNTk0NjksImV4cCI6MjA3MDUzNTQ2OX0.n8uTn2WWbtlvO08mNYcGQs7gcAWXRnEKVpLBaILxl0Y
       - key: CRON_SECRET
-        value: your_cron_secret_here
+        value: 9997979a942df23e20615b18c40757eb5360dda27675280c5df3af6d313ea260
     autoDeploy: true
     branch: main
 
