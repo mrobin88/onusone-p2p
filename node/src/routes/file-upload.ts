@@ -65,6 +65,13 @@ router.post('/file', upload.single('file'), async (req: any, res: any) => {
       });
     }
     
+    if (!req.body.userWallet) {
+      return res.status(400).json({
+        success: false,
+        message: 'User wallet address required'
+      });
+    }
+    
     const { messageId, userWallet, description } = req.body;
     const file = req.file;
     
@@ -118,6 +125,13 @@ router.get('/file/:fileId', async (req: any, res: any) => {
   try {
     const { fileId } = req.params;
     
+    if (!fileId) {
+      return res.status(400).json({
+        success: false,
+        message: 'File ID required'
+      });
+    }
+    
     // TODO: Fetch from Supabase database
     const mockFile = {
       id: fileId,
@@ -154,6 +168,13 @@ router.post('/pin/:ipfsHash', async (req: any, res: any) => {
   try {
     const { ipfsHash } = req.params;
     
+    if (!ipfsHash) {
+      return res.status(400).json({
+        success: false,
+        message: 'IPFS hash required'
+      });
+    }
+    
     // Pin the file to IPFS
     // Note: Pinning is handled automatically by Helia
     console.log(`📌 File pinned to IPFS: ${ipfsHash}`);
@@ -180,8 +201,12 @@ router.post('/pin/:ipfsHash', async (req: any, res: any) => {
  */
 router.get('/status', async (req: any, res: any) => {
   try {
-    // Check IPFS connection
-    const id = 'local-storage'; // Placeholder for IPFS node ID
+    // Check storage status
+    const storageStatus = {
+      type: 'local-storage',
+      status: 'operational',
+      message: 'File storage using local system - IPFS integration coming soon'
+    };
     
     res.json({
       success: true,
