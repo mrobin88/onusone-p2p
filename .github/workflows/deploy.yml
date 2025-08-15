@@ -58,7 +58,14 @@ jobs:
         run: |
           npm ci
           npm run build
-          tar -czf frontend.tar.gz .next/ package.json package-lock.json public/
+          # Create tar with only existing files
+          tar -czf frontend.tar.gz .next/ package.json
+          if [ -f package-lock.json ]; then
+            tar -czf frontend.tar.gz .next/ package.json package-lock.json
+          fi
+          if [ -d public ]; then
+            tar -czf frontend.tar.gz .next/ package.json public/
+          fi
           echo "artifact=$(pwd)/frontend.tar.gz" >> $GITHUB_OUTPUT
 
       - name: Upload node artifacts
