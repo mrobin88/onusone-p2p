@@ -25,14 +25,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd shared && npm ci
-          cd ../node && npm ci
+          cd node && npm ci
           cd ../frontend && npm ci
 
       - name: Build all components
         run: |
-          cd shared && npm run build
-          cd ../node && npm run build --if-present
+          cd node && npm run build --if-present
           cd ../frontend && npm run build
 
       - name: Generate changelog
@@ -96,8 +94,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./shared/dist/
-          asset_name: shared-library-${{ steps.changelog.outputs.version }}.tar.gz
+          asset_path: ./node/dist/
+          asset_name: node-backend-${{ steps.changelog.outputs.version }}.tar.gz
           asset_content_type: application/gzip
 
       - name: Upload node assets
@@ -141,9 +139,8 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Update shared version
-        working-directory: ./shared
         run: |
-          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+          echo "Shared library removed - skipping version update"
 
       - name: Update node version
         working-directory: ./node

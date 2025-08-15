@@ -40,6 +40,7 @@
     "src/services/**/*",
     "src/simple-server.ts",
     "src/orbit-server.ts",
-    "src/shared/**/*"
+    "src/shared/**/*",
+    "src/cron/**/*"
   ]
 }

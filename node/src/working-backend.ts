@@ -498,16 +498,19 @@ export class WorkingBackend {
     }
   }
 
-  async start(port: number = 8888) {
+  async start(port?: number) {
     try {
       this.isRunning = true;
       
-      this.server = this.app.listen(port, () => {
-        console.log(`🚀 WorkingBackend started on port ${port}`);
-        console.log(`🌐 Health check: http://localhost:${port}/health`);
-        console.log(`📊 API test: http://localhost:${port}/api/test`);
-        console.log(`📝 Messages: http://localhost:${port}/api/boards/general/messages`);
-        console.log(`🔌 WebSocket: ws://localhost:${port}/ws`);
+      // Use Render's PORT environment variable or fallback to 8888
+      const actualPort = port || parseInt(process.env.PORT || '8888');
+      
+      this.server = this.app.listen(actualPort, () => {
+        console.log(`🚀 WorkingBackend started on port ${actualPort}`);
+        console.log(`🌐 Health check: http://localhost:${actualPort}/health`);
+        console.log(`📊 API test: http://localhost:${actualPort}/api/test`);
+        console.log(`📝 Messages: http://localhost:${actualPort}/api/boards/general/messages`);
+        console.log(`🔌 WebSocket: ws://localhost:${actualPort}/ws`);
         console.log(`💾 Database: ${this.supabase ? 'Supabase' : 'Local Storage'}`);
       });
       
@@ -569,8 +572,8 @@ async function main() {
   });
 
   try {
-    const port = parseInt(process.env.NODE_PORT || '8888');
-    await backend.start(port);
+    // Let the backend use the PORT environment variable from Render
+    await backend.start();
   } catch (error) {
     console.error('❌ Failed to start WorkingBackend:', error);
     process.exit(1);

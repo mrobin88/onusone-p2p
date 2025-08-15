@@ -38,12 +38,10 @@ jobs:
         npm ci
         cd frontend && npm ci
         cd ../node && npm ci
-        cd ../shared && npm ci
         
     - name: 🏗️ Build projects
       run: |
-        cd shared && npm run build
-        cd ../node && npm run build
+        cd node && npm run build
         cd ../frontend && npm run build
         
     - name: 🧪 Run P2P tests
@@ -141,10 +139,9 @@ jobs:
       run: |
         npm ci
         cd frontend && npm ci
-        cd ../shared && npm ci
         
     - name: 🏗️ Build shared components
-      run: cd shared && npm run build
+      run: echo "Shared components removed - skipping build"
       
     - name: 🌐 Build frontend
       env:

@@ -36,10 +36,8 @@ jobs:
           cache: 'npm'
 
       - name: Install and build shared library
-        working-directory: ./shared
         run: |
-          npm ci
-          npm run build || echo "Shared build failed, continuing with node build..."
+          echo "Shared library removed - skipping build"
 
       - name: Build node backend
         id: build-node
