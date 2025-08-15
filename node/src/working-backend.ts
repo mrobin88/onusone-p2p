@@ -5,6 +5,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 import { Connection, PublicKey } from '@solana/web3.js';
@@ -93,6 +94,10 @@ export class WorkingBackend {
     this.app.use(cors());
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
+    
+    // Serve static frontend files
+    this.app.use(express.static(path.join(__dirname, '../../frontend/out')));
+    this.app.use(express.static(path.join(__dirname, '../../frontend/.next')));
   }
 
   private setupRoutes() {
@@ -327,7 +332,7 @@ export class WorkingBackend {
     });
 
     // Test endpoint
-    this.app.get('/api/test', (req: express.Request, res: express.Response) => {
+    this.app.get('/api/test', (req: express.Request, res:express.Response) => {
       res.json({
         message: 'WorkingBackend is running and functional!',
         backend: 'WorkingBackend',
@@ -342,7 +347,65 @@ export class WorkingBackend {
       });
     });
 
+    // Catch-all route to serve frontend
+    this.app.get('*', (req: express.Request, res: express.Response) => {
+      // Try to serve from frontend build directory
+      const frontendPath = path.join(__dirname, '../../frontend/out/index.html');
+      const nextPath = path.join(__dirname, '../../frontend/.next/server/pages/index.html');
+      
+      if (require('fs').existsSync(frontendPath)) {
+        res.sendFile(frontendPath);
+      } else if (require('fs').existsSync(nextPath)) {
+        res.sendFile(nextPath);
+      } else {
+        // Fallback to API info if frontend not built
+        res.json({
+          message: 'OnusOne Time Capsule App',
+          status: 'Frontend not built yet - building...',
+          endpoints: {
+            health: '/health',
+            api: '/api',
+            timeCapsules: '/api/time-capsules'
+          }
+        });
+      }
+    });
+
     // Time Capsule Endpoints
+    
+    // Get all time capsules
+    this.app.get('/api/time-capsules', async (req: express.Request, res: express.Response) => {
+      try {
+        if (this.supabase) {
+          const { data, error } = await this.supabase
+            .from('time_capsules')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          res.json(data || []);
+        } else {
+          // Mock time capsules for local development
+          const mockCapsules = [
+            {
+              id: uuidv4(),
+              content: 'This is a test time capsule from the future!',
+              author_wallet: '5cWbrGdWHLXYtzV3RbSSmHQYQBJ68wVEkvamr3T7ZTZk',
+              author_username: 'matthewrobin',
+              unlock_at: Date.now() + 86400000, // 24 hours from now
+              cost_onu: 10,
+              is_locked: true,
+              created_at: new Date().toISOString()
+            }
+          ];
+          res.json(mockCapsules);
+        }
+      } catch (error) {
+        console.error('Failed to get time capsules:', error);
+        res.status(500).json({ error: 'Failed to get time capsules' });
+      }
+    });
+    
     // Create a time capsule (stores as a message with metadata)
     this.app.post('/api/time-capsules', async (req: express.Request, res: express.Response) => {
       try {
