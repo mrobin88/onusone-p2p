@@ -551,17 +551,13 @@ export class WorkingBackend {
 
   private async importCoreRoutes() {
     try {
-      // Import Stripe webhook routes (core for ONU purchases)
-      const stripeWebhookRoutes = await import('./routes/stripe-webhook');
-      this.app.use('/api/stripe', stripeWebhookRoutes.default);
-      console.log('✅ Stripe webhook routes loaded');
-
       // Import file upload routes (core for time capsules)
       const fileUploadRoutes = await import('./routes/file-upload');
       this.app.use('/api/upload', fileUploadRoutes.default);
       console.log('✅ File upload routes loaded');
 
-
+      // Stripe webhook routes disabled until ONU token is deployed
+      console.log('⚠️  Stripe webhook routes disabled - ONU token not deployed yet');
 
     } catch (error) {
       console.warn('⚠️  Some routes failed to load:', error);

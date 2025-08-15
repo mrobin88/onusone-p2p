@@ -74,3 +74,6 @@ databases:
     databaseName: onusone
     user: onusone_user
     plan: free
+  
+ -key: ONU_TOKEN_MINT
+        value: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
