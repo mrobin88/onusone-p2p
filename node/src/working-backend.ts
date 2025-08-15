@@ -101,6 +101,23 @@ export class WorkingBackend {
     
 
     
+    // Root route - redirect to frontend or show API info
+    this.app.get('/', (req: express.Request, res: express.Response) => {
+      res.json({
+        message: 'OnusOne Time Capsule API',
+        version: '1.0.0',
+        status: 'running',
+        endpoints: {
+          health: '/health',
+          api: '/api',
+          timeCapsules: '/api/time-capsules',
+          stripe: '/api/stripe',
+          upload: '/api/upload'
+        },
+        docs: 'This is the backend API for the OnusOne Time Capsule app'
+      });
+    });
+
     // Health check
     this.app.get('/health', (req: express.Request, res: express.Response) => {
       res.json({

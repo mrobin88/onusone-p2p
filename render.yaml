@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: onusone-p2p-unified
+    name: onusone-p2p-backend
     env: node
     envVars:
       - key: NODE_VERSION
@@ -9,8 +9,47 @@ services:
         value: production
       - key: PORT
         value: 8888
+      - key: SOLANA_RPC_URL
+        value: https://solana-mainnet.g.alchemy.com/v2/LBo6Iza6EaQqGcoqRF83h
+      - key: SOLANA_NETWORK
+        value: mainnet
+      - key: SUPABASE_URL
+        value: https://vzkdahthvksbcaqymuyz.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6a2RhaHRodmtzYmNhaXltdXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNTk0NjksImV4cCI6MjA3MDUzNTQ2OX0.n8uTn2WWbtlvO08mNYcGQs7gcAWXRnEKVpLBaILxl0Y
+      - key: PINATA_API_KEY
+        value: 708dc85125510b06d3eb
+      - key: PINATA_SECRET_KEY
+        value: 5c71ff5aaab07b21623db6d1a49fb06dfc354d9bdef992add6a21a10af7176ea
+      - key: STRIPE_SECRET_KEY
+        value: ${{ secrets.STRIPE_SECRET_KEY }}
+      - key: STRIPE_WEBHOOK_SECRET
+        value: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      - key: STRIPE_PUBLISHABLE_KEY
+        value: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+      - key: CRON_SECRET
+        value: 9997979a942df23e20615b18c40757eb5360dda27675280c5df3af6d313ea260
+      - key: TREASURY_ADDRESS
+        value: SuUxaKEsGZu5FWDeY49PPRzis888N9mAnS93Zkxppes
+      - key: TREASURY_PRIVATE_KEY
+        value: 5t7FUeve2Vq/07edPc1Ebbz0fXhZfBNMb+rm/dcfi6wGotyil0mYcpqYJziwLSOCIrrBo9hwDTmraCJoCtJa2A==
+    buildCommand: |
+      cd node && npm ci --only=production && npm run build
+    startCommand: cd node && npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    branch: main
+
+  - type: web
+    name: onusone-p2p-frontend
+    env: node
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
       - key: NEXT_PUBLIC_BACKEND_URL
-        value: https://onusone-p2p-unified.onrender.com
+        value: https://onusone-p2p-backend.onrender.com
       - key: NEXT_PUBLIC_SOLANA_RPC_URL
         value: https://solana-mainnet.g.alchemy.com/v2/LBo6Iza6EaQqGcoqRF83h
       - key: NEXT_PUBLIC_SOLANA_NETWORK
@@ -23,47 +62,10 @@ services:
         value: true
       - key: NEXT_PUBLIC_REPUTATION_ENABLED
         value: true
-      - key: SOLANA_RPC_URL
-        value: https://solana-mainnet.g.alchemy.com/v2/LBo6Iza6EaQqGcoqRF83h
-      - key: SOLANA_NETWORK
-        value: mainnet
-      - key: SUPABASE_URL
-        value: https://vzkdahthvksbcaqymuyz.supabase.co
-      - key: SUPABASE_ANON_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6a2RhaHRodmtzYmNhaXltdXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNTk0NjksImV4cCI6MjA3MDUzNTQ2OX0.n8uTn2WWbtlvO08mNYcGQs7gcAWXRnEKVpLBaILxl0Y
-      - key: PINATA_API_KEY
-        value: 708dc85125510b06d3eb
-      - key: PINATA_SECRET_KEY
-        value: your_pinata_secret_key_here
-      - key: CRON_SECRET
-        value: 9997979a942df23e20615b18c40757eb5360dda27675280c5df3af6d313ea260
-      - key: TREASURY_ADDRESS
-        value: SuUxaKEsGZu5FWDeY49PPRzis888N9mAnS93Zkxppes
-      - key: TREASURY_PRIVATE_KEY
-        value: 5t7FUeve2Vq/07edPc1Ebbz0fXhZfBNMb+rm/dcfi6wGotyil0mYcpqYJziwLSOCIrrBo9hwDTmraCJoCtJa2A==
     buildCommand: |
-      cd frontend && npm install && npm run build:production &&
-      cd ../node && npm ci --only=production && npm run build
-    startCommand: cd node && npm start
-    healthCheckPath: /api/health
-    autoDeploy: true
-    branch: main
-
-  - type: cron
-    name: onusone-p2p-cron
-    env: node
-    schedule: "0 * * * *"
-    buildCommand: cd node && npm install
-    startCommand: cd node && npm run cron
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: SUPABASE_URL
-        value: https://vzkdahthvksbcaqymuyz.supabase.co
-      - key: SUPABASE_ANON_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6a2RhaHRodmtzYmNhaXltdXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNTk0NjksImV4cCI6MjA3MDUzNTQ2OX0.n8uTn2WWbtlvO08mNYcGQs7gcAWXRnEKVpLBaILxl0Y
-      - key: CRON_SECRET
-        value: 9997979a942df23e20615b18c40757eb5360dda27675280c5df3af6d313ea260
+      cd frontend && npm ci && npm run build
+    startCommand: cd frontend && PORT=$PORT npm start
+    healthCheckPath: /
     autoDeploy: true
     branch: main
 
