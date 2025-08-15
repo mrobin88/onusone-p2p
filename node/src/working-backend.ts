@@ -96,11 +96,10 @@ export class WorkingBackend {
   }
 
   private setupRoutes() {
-    // Import all route modules
-    this.importRoutes();
+    // Import core route modules only
+    this.importCoreRoutes();
     
-    // Add monitoring middleware
-    this.setupMonitoring();
+
     
     // Health check
     this.app.get('/health', (req: express.Request, res: express.Response) => {
@@ -530,51 +529,26 @@ export class WorkingBackend {
     }
   }
 
-  private async importRoutes() {
+  private async importCoreRoutes() {
     try {
-      // Import Stripe webhook routes
+      // Import Stripe webhook routes (core for ONU purchases)
       const stripeWebhookRoutes = await import('./routes/stripe-webhook');
       this.app.use('/api/stripe', stripeWebhookRoutes.default);
       console.log('✅ Stripe webhook routes loaded');
 
-      // Import staking routes
-      const stakingRoutes = await import('./routes/staking');
-      this.app.use('/api/staking', stakingRoutes.default);
-      console.log('✅ Staking routes loaded');
-
-      // Import file upload routes
+      // Import file upload routes (core for time capsules)
       const fileUploadRoutes = await import('./routes/file-upload');
       this.app.use('/api/upload', fileUploadRoutes.default);
       console.log('✅ File upload routes loaded');
 
-      // Import monitoring routes
-      const monitoringRoutes = await import('./routes/monitoring');
-      this.app.use('/api/monitoring', monitoringRoutes.default);
-      console.log('✅ Monitoring routes loaded');
 
-      // Import decay routes
-      const decayRoutes = await import('./routes/decay');
-      this.app.use('/api/decay', decayRoutes.default);
-      console.log('✅ Decay routes loaded');
 
     } catch (error) {
       console.warn('⚠️  Some routes failed to load:', error);
     }
   }
 
-  private setupMonitoring() {
-    try {
-      // Import monitoring middleware
-      const { monitoring } = require('./utils/monitoring');
-      
-      // Add monitoring middleware to all routes
-      this.app.use(monitoring.trackAPIPerformance());
-      
-      console.log('✅ Monitoring middleware enabled');
-    } catch (error) {
-      console.warn('⚠️  Monitoring middleware failed to load:', error);
-    }
-  }
+
 }
 
 // Main execution
