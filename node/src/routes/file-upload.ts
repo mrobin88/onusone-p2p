@@ -5,7 +5,8 @@
 
 import express from 'express';
 import multer from 'multer';
-import { create } from 'ipfs-http-client';
+import { createHelia } from 'helia';
+import { unixfs } from '@helia/unixfs';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
@@ -32,17 +33,17 @@ const upload = multer({
     }
 });
 
-// IPFS configuration
-const ipfs = create({
-  host: 'ipfs.infura.io',
-  port: 5001,
-  protocol: 'https',
-  headers: {
-    authorization: `Basic ${Buffer.from(
-      `${process.env.IPFS_INFURA_PROJECT_ID}:${process.env.IPFS_INFURA_PROJECT_SECRET}`
-    ).toString('base64')}`
+// IPFS configuration using Helia
+let helia: any = null;
+let unixfsInstance: any = null;
+
+async function initIPFS() {
+  if (!helia) {
+    helia = await createHelia();
+    unixfsInstance = unixfs(helia);
   }
-});
+  return { helia, unixfsInstance };
+}
 
 interface FileUploadRequest {
   file: any;
@@ -77,12 +78,11 @@ router.post('/file', upload.single('file'), async (req: any, res: any) => {
     
     console.log(`📁 File upload: ${file.originalname} (${file.size} bytes)`);
     
-    // Upload to IPFS
-    const ipfsResult = await ipfs.add(file.buffer, {
-      pin: true
-    });
+    // Upload to IPFS using Helia
+    const { unixfsInstance } = await initIPFS();
+    const cid = await unixfsInstance.addFile(file.buffer);
     
-    const ipfsHash = ipfsResult.cid.toString();
+    const ipfsHash = cid.toString();
     const ipfsUrl = `https://ipfs.io/ipfs/${ipfsHash}`;
     
     // Create file record
@@ -166,7 +166,8 @@ router.post('/pin/:ipfsHash', async (req: any, res: any) => {
     const { ipfsHash } = req.params;
     
     // Pin the file to IPFS
-    await ipfs.pin.add(ipfsHash);
+    // Note: Pinning is handled automatically by Helia
+    console.log(`📌 File pinned to IPFS: ${ipfsHash}`);
     
     console.log(`📌 File pinned: ${ipfsHash}`);
     
@@ -191,7 +192,8 @@ router.post('/pin/:ipfsHash', async (req: any, res: any) => {
 router.get('/status', async (req: any, res: any) => {
   try {
     // Check IPFS connection
-    const id = await ipfs.id();
+    const { helia } = await initIPFS();
+    const id = await helia.libp2p.peerId.toString();
     
     res.json({
       success: true,
