@@ -15,7 +15,7 @@ on:
         - production
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
 
 jobs:
   # Build and package
@@ -45,7 +45,11 @@ jobs:
         run: |
           npm ci
           npm run build || (echo "Node build failed, attempting to build working-backend only..." && npx tsc src/working-backend.ts --outDir dist --target ES2020 --module commonjs --esModuleInterop --skipLibCheck)
-          tar -czf node-backend.tar.gz dist/ package.json package-lock.json
+          # Create tar with only existing files
+          tar -czf node-backend.tar.gz dist/ package.json
+          if [ -f package-lock.json ]; then
+            tar -czf node-backend.tar.gz dist/ package.json package-lock.json
+          fi
           echo "artifact=$(pwd)/node-backend.tar.gz" >> $GITHUB_OUTPUT
 
       - name: Build frontend

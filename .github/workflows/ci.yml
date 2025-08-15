@@ -28,7 +28,7 @@ jobs:
 
       - name: Install node dependencies
         working-directory: ./node
-        run: npm install
+        run: npm ci
 
       - name: Build node
         working-directory: ./node
@@ -59,7 +59,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./frontend
-        run: npm install
+        run: npm ci
 
       - name: Build frontend
         working-directory: ./frontend
@@ -89,8 +89,8 @@ jobs:
 
       - name: Install all dependencies
         run: |
-          cd node && npm install
-          cd ../frontend && npm install
+          cd node && npm ci
+          cd ../frontend && npm ci
 
       - name: Start node server
         working-directory: ./node
@@ -130,8 +130,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd node && npm install
-          cd ../frontend && npm install
+          cd node && npm ci
+          cd ../frontend && npm ci
 
       - name: Run security audit
         run: |
@@ -153,8 +153,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd node && npm install
-          cd ../frontend && npm install
+          cd node && npm ci
+          cd ../frontend && npm ci
 
       - name: Check code formatting
         run: |
@@ -182,8 +182,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd node && npm install
-          cd ../frontend && npm install
+          cd node && npm ci
+          cd ../frontend && npm ci
 
       - name: Build all packages
         run: |
