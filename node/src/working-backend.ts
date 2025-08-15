@@ -95,7 +95,9 @@ export class WorkingBackend {
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
     
-    // Serve static frontend files
+    // Serve static frontend files with proper paths
+    this.app.use('/_next', express.static(path.join(__dirname, '../../frontend/.next')));
+    this.app.use('/static', express.static(path.join(__dirname, '../../frontend/.next/static')));
     this.app.use(express.static(path.join(__dirname, '../../frontend/out')));
     this.app.use(express.static(path.join(__dirname, '../../frontend/.next')));
   }
