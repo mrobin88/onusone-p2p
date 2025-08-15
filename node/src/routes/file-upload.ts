@@ -5,8 +5,7 @@
 
 import express from 'express';
 import multer from 'multer';
-import { createHelia } from 'helia';
-import { unixfs } from '@helia/unixfs';
+// Simple file storage for now - IPFS integration can be added later
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
@@ -33,16 +32,9 @@ const upload = multer({
     }
 });
 
-// IPFS configuration using Helia
-let helia: any = null;
-let unixfsInstance: any = null;
-
-async function initIPFS() {
-  if (!helia) {
-    helia = await createHelia();
-    unixfsInstance = unixfs(helia);
-  }
-  return { helia, unixfsInstance };
+// Simple file storage - generate unique IDs for now
+function generateFileId(): string {
+  return uuidv4();
 }
 
 interface FileUploadRequest {
@@ -78,15 +70,12 @@ router.post('/file', upload.single('file'), async (req: any, res: any) => {
     
     console.log(`📁 File upload: ${file.originalname} (${file.size} bytes)`);
     
-    // Upload to IPFS using Helia
-    const { unixfsInstance } = await initIPFS();
-    const cid = await unixfsInstance.addFile(file.buffer);
-    
-    const ipfsHash = cid.toString();
+    // Generate unique file ID for now
+    const fileId = generateFileId();
+    const ipfsHash = fileId; // Placeholder for IPFS hash
     const ipfsUrl = `https://ipfs.io/ipfs/${ipfsHash}`;
     
     // Create file record
-    const fileId = uuidv4();
     const fileMetadata = {
       id: fileId,
       originalName: file.originalname,
@@ -192,14 +181,12 @@ router.post('/pin/:ipfsHash', async (req: any, res: any) => {
 router.get('/status', async (req: any, res: any) => {
   try {
     // Check IPFS connection
-    const { helia } = await initIPFS();
-    const id = await helia.libp2p.peerId.toString();
+    const id = 'local-storage'; // Placeholder for IPFS node ID
     
     res.json({
       success: true,
-      ipfsStatus: 'connected',
-      nodeId: id.id,
-      version: id.agentVersion
+      status: 'local-storage',
+      message: 'File storage using local system - IPFS integration coming soon'
     });
     
   } catch (error) {
