@@ -12,7 +12,7 @@ const router = express.Router();
  * Get real-time system metrics
  * GET /api/monitoring/metrics
  */
-router.get('/metrics', (req, res) => {
+router.get('/metrics', (req: any, res: any) => {
   try {
     const metrics = monitoring.getMetrics();
     const businessMetrics = monitoring.getBusinessMetrics();
@@ -45,7 +45,7 @@ router.get('/metrics', (req, res) => {
  * Get performance summary
  * GET /api/monitoring/performance
  */
-router.get('/performance', (req, res) => {
+router.get('/performance', (req: any, res: any) => {
   try {
     const performance = monitoring.getPerformanceSummary();
     
@@ -68,7 +68,7 @@ router.get('/performance', (req, res) => {
  * Get business metrics
  * GET /api/monitoring/business
  */
-router.get('/business', (req, res) => {
+router.get('/business', (req: any, res: any) => {
   try {
     const businessMetrics = monitoring.getBusinessMetrics();
     
@@ -91,7 +91,7 @@ router.get('/business', (req, res) => {
  * Get error analysis
  * GET /api/monitoring/errors
  */
-router.get('/errors', (req, res) => {
+router.get('/errors', (req: any, res: any) => {
   try {
     const errors = monitoring.getErrorAnalysis();
     
@@ -114,7 +114,7 @@ router.get('/errors', (req, res) => {
  * Get system health
  * GET /api/monitoring/health
  */
-router.get('/health', (req, res) => {
+router.get('/health', (req: any, res: any) => {
   try {
     const uptime = monitoring.getUptime();
     const businessMetrics = monitoring.getBusinessMetrics();
@@ -180,7 +180,7 @@ router.post('/reset', (req, res) => {
  * Get detailed metrics for specific endpoint
  * GET /api/monitoring/endpoint/:path
  */
-router.get('/endpoint/:path(*)', (req, res) => {
+router.get('/endpoint/:path(*)', (req: any, res: any) => {
   try {
     const { path } = req.params;
     const metrics = monitoring.getMetrics();

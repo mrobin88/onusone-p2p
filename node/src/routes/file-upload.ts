@@ -63,7 +63,7 @@ interface FileUploadResponse {
  * Upload file to IPFS
  * POST /api/upload/file
  */
-router.post('/file', upload.single('file'), async (req, res) => {
+router.post('/file', upload.single('file'), async (req: any, res: any) => {
   try {
     if (!req.file) {
       return res.status(400).json({ 
@@ -125,7 +125,7 @@ router.post('/file', upload.single('file'), async (req, res) => {
  * Get file metadata
  * GET /api/upload/file/:fileId
  */
-router.get('/file/:fileId', async (req, res) => {
+router.get('/file/:fileId', async (req: any, res: any) => {
   try {
     const { fileId } = req.params;
     
@@ -161,7 +161,7 @@ router.get('/file/:fileId', async (req, res) => {
  * Pin file to IPFS (ensure it stays available)
  * POST /api/upload/pin/:ipfsHash
  */
-router.post('/pin/:ipfsHash', async (req, res) => {
+router.post('/pin/:ipfsHash', async (req: any, res: any) => {
   try {
     const { ipfsHash } = req.params;
     
@@ -188,7 +188,7 @@ router.post('/pin/:ipfsHash', async (req, res) => {
  * Get IPFS gateway status
  * GET /api/upload/status
  */
-router.get('/status', async (req, res) => {
+router.get('/status', async (req: any, res: any) => {
   try {
     // Check IPFS connection
     const id = await ipfs.id();

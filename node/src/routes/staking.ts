@@ -35,7 +35,7 @@ interface StakeResponse {
  * Create a stake on a message
  * POST /api/staking/stake
  */
-router.post('/stake', async (req, res) => {
+router.post('/stake', async (req: any, res: any) => {
   try {
     const { messageId, amount, stakeType, userWallet }: StakeRequest = req.body;
     
@@ -78,7 +78,7 @@ router.post('/stake', async (req, res) => {
  * Get all stakes for a message
  * GET /api/staking/message/:messageId
  */
-router.get('/message/:messageId', async (req, res) => {
+router.get('/message/:messageId', async (req: any, res: any) => {
   try {
     const { messageId } = req.params;
     
@@ -112,7 +112,7 @@ router.get('/message/:messageId', async (req, res) => {
  * Withdraw stake and rewards
  * POST /api/staking/withdraw
  */
-router.post('/withdraw', async (req, res) => {
+router.post('/withdraw', async (req: any, res: any) => {
   try {
     const { stakeId, userWallet } = req.body;
     
@@ -146,7 +146,7 @@ router.post('/withdraw', async (req, res) => {
  * Get user's staking portfolio
  * GET /api/staking/portfolio/:userWallet
  */
-router.get('/portfolio/:userWallet', async (req, res) => {
+router.get('/portfolio/:userWallet', async (req: any, res: any) => {
   try {
     const { userWallet } = req.params;
     
