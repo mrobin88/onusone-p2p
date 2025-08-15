@@ -1,9 +1,0 @@
-/Users/matthewrobin/Projects/onusone-p2p/contracts/target/debug/deps/solana_loader_v4_interface-9bb2a2715acdaa74.d: /Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/lib.rs /Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/instruction.rs /Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/state.rs
-
-/Users/matthewrobin/Projects/onusone-p2p/contracts/target/debug/deps/libsolana_loader_v4_interface-9bb2a2715acdaa74.rlib: /Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/lib.rs /Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/instruction.rs /Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/state.rs
-
-/Users/matthewrobin/Projects/onusone-p2p/contracts/target/debug/deps/libsolana_loader_v4_interface-9bb2a2715acdaa74.rmeta: /Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/lib.rs /Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/instruction.rs /Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/state.rs
-
-/Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/lib.rs:
-/Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/instruction.rs:
-/Users/matthewrobin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-loader-v4-interface-2.2.1/src/state.rs:
